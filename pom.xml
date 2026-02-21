@@ -1,17 +1,104 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+<project>
+<modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.example</groupId>
-    <artifactId>OCEAN_VIEW_RESORT_RESERVATION_SYSTEM</artifactId>
-    <version>1.0-SNAPSHOT</version>
+<groupId>com.hotel</groupId>
+<artifactId>OCEAN_VIEW_RESORT_RESERVARION_SYSTEM</artifactId>
+<version>1.0-SNAPSHOT</version>
+<packaging>war</packaging>  <!-- Critical: must be war for exploded artifact -->
 
-    <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
+<properties>
+<maven.compiler.source>17</maven.compiler.source>   <!-- Or 21 if your JDK is 21 -->
+<maven.compiler.target>17</maven.compiler.target>
+<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+<jakarta.servlet-api.version>6.1.0</jakarta.servlet-api.version>
+<mysql-connector-j.version>9.1.0</mysql-connector-j.version>  <!-- Latest stable in early 2026 -->
+<junit-jupiter.version>5.11.3</junit-jupiter.version>         <!-- Latest minor in 2026 -->
+</properties>
 
-</project>
+<dependencies>
+<!-- Jakarta Servlet API (for Tomcat 10+ / Jakarta EE 10) -->
+<dependency>
+    <groupId>jakarta.servlet</groupId>
+    <artifactId>jakarta.servlet-api</artifactId>
+    <version>${jakarta.servlet-api.version}</version>
+    <scope>provided</scope>
+</dependency>
+
+
+    <dependency>
+        <groupId>org.apache.tomcat</groupId>
+        <artifactId>tomcat-jdbc</artifactId>
+        <version>10.1.52</version>  <!-- Use the latest 10.1.x stable as of Feb 2026; check mvnrepository.com for newer -->
+        <scope>provided</scope>     <!-- Very important: provided = only compile-time, not packaged in WAR -->
+    </dependency>
+
+<!-- MySQL Connector/J – use latest stable -->
+<dependency>
+    <groupId>com.mysql</groupId>
+    <artifactId>mysql-connector-j</artifactId>
+    <version>${mysql-connector-j.version}</version>
+    <scope>runtime</scope>
+</dependency>
+
+<!-- JUnit 5 for testing (DAO, services, utils) -->
+<dependency>
+    <groupId>org.junit.jupiter</groupId>
+    <artifactId>junit-jupiter</artifactId>
+    <version>${junit-jupiter.version}</version>
+    <scope>test</scope>
+</dependency>
+
+<!-- Optional but highly recommended for better assertions in tests -->
+<dependency>
+    <groupId>org.assertj</groupId>
+    <artifactId>assertj-core</artifactId>
+    <version>3.26.3</version>  <!-- Latest in 2026 -->
+    <scope>test</scope>
+</dependency>
+
+<!-- Optional: If you add logging later (e.g., SLF4J + Logback) -->
+<!--
+<dependency>
+    <groupId>ch.qos.logback</groupId>
+    <artifactId>logback-classic</artifactId>
+    <version>1.5.12</version>
+    <scope>runtime</scope>
+</dependency>
+-->
+</dependencies>
+
+<build>
+<finalName>hotel-reservation</finalName>  <!-- Cleaner context path: /hotel-reservation -->
+
+<plugins>
+    <!-- Compiler: Ensure Java 17 (or 21) compatibility -->
+    <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.13.0</version>  <!-- Latest stable in 2026; supports up to Java 23 -->
+        <configuration>
+            <source>${maven.compiler.source}</source>
+            <target>${maven.compiler.target}</target>
+            <release>${maven.compiler.source}</release>  <!-- Modern way -->
+        </configuration>
+    </plugin>
+
+    <!-- WAR plugin: Required for exploded artifact generation -->
+    <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-war-plugin</artifactId>
+        <version>3.5.1</version>  <!-- Latest in late 2025 / 2026 -->
+        <configuration>
+            <failOnMissingWebXml>false</failOnMissingWebXml>  <!-- If using annotations only -->
+        </configuration>
+    </plugin>
+
+    <!-- Optional: Clean up target dir more aggressively -->
+    <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-clean-plugin</artifactId>
+        <version>3.4.0</version>
+    </plugin>
+</plugins>
+</build>
+        </project>
