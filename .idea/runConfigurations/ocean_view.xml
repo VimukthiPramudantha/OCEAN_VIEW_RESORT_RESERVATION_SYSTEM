@@ -4,12 +4,12 @@
     <deployment>
       <artifact name="OCEAN_VIEW_RESORT_RESERVATION_SYSTEM:war">
         <settings>
-          <option name="CONTEXT_PATH" value="/OCEAN_VIEW_RESORT_RESERVATION_SYSTEM_war" />
+          <option name="CONTEXT_PATH" value="/resort" />
         </settings>
       </artifact>
       <artifact name="OCEAN_VIEW_RESORT_RESERVATION_SYSTEM:war exploded">
         <settings>
-          <option name="CONTEXT_PATH" value="/OCEAN_VIEW_RESORT_RESERVATION_SYSTEM_war_exploded" />
+          <option name="CONTEXT_PATH" value="/" />
         </settings>
       </artifact>
     </deployment>
