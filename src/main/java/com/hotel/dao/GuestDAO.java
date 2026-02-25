@@ -44,9 +44,11 @@ public class GuestDAO {
      * Save new guest and return the generated ID
      */
     public int save(Guest guest) {
-        String sql = "INSERT INTO guests (name, nic_passport, adults, children, infants, " +
-                "nationality, contact, email) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = """
+        INSERT INTO guests (name, nic_passport, adults, children, infants, 
+                            nationality, contact, email)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """;
 
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -60,17 +62,27 @@ public class GuestDAO {
             ps.setString(7, guest.getContact());
             ps.setString(8, guest.getEmail());
 
-            ps.executeUpdate();
+            int rows = ps.executeUpdate();
+            if (rows == 0) {
+                return -1; // no rows inserted
+            }
 
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (rs.next()) {
                     return rs.getInt(1);
                 }
             }
+            return -1; // should not happen if rows > 0
+
         } catch (SQLException e) {
-            System.err.println("Guest save error: " + e.getMessage());
+            // Log the REAL error - this is crucial!
+            System.err.println("Guest insert failed: " + e.getMessage());
+            e.printStackTrace(); // prints full stack trace to console/logs
+            if (e.getSQLState().equals("23000") && e.getErrorCode() == 1062) {
+                System.err.println("Likely cause: Duplicate contact or NIC/passport");
+            }
+            return -1;
         }
-        return -1; // failure
     }
 
     /**

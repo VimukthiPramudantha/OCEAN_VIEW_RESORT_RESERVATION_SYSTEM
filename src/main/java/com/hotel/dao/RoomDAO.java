@@ -118,7 +118,23 @@ public class RoomDAO {
 
         return null;  // No currently available room
     }
+    /**
+     * Marks the room as booked using provided connection (for transaction)
+     * Returns true if updated successfully
+     */
+    public boolean markAsBooked(int roomId, Connection conn) throws SQLException {
+        String sql = """
+        UPDATE rooms 
+        SET status = 'booked'
+        WHERE room_id = ? AND status = 'available'
+    """;
 
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, roomId);
+            int rows = ps.executeUpdate();
+            return rows > 0;  // true only if it was available and updated
+        }
+    }
     /**
      * Returns the standard rate per night for the given room type.
      * Returns 0.0 on failure (consider throwing exception in production).

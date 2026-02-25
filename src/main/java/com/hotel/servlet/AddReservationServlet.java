@@ -10,9 +10,12 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import com.hotel.config.DBUtil;
 
 import java.io.IOException;
+import java.sql.Connection;
 import java.sql.Date;
+import java.sql.SQLException;
 import java.sql.Time;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
@@ -31,8 +34,9 @@ public class AddReservationServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        Connection conn = null;
         try {
-            // 1. Parse all form parameters
+            // === Parse & Validate ===
             String nicPassport     = trimOrNull(req.getParameter("nicPassport"));
             String fullName        = trimOrNull(req.getParameter("fullName"));
             String nationality     = trimOrNull(req.getParameter("nationality"));
@@ -53,7 +57,7 @@ public class AddReservationServlet extends HttpServlet {
             int children = safeParseInt(req.getParameter("children"), 0);
             int infants  = safeParseInt(req.getParameter("infants"),  0);
 
-            // 2. Mandatory field validation
+            // Mandatory validation
             if (isBlank(nicPassport) || isBlank(fullName) || isBlank(contact) ||
                     isBlank(nationality) || isBlank(roomType) || isBlank(checkInStr) || isBlank(checkOutStr)) {
                 req.setAttribute("error", "All mandatory fields must be filled.");
@@ -70,10 +74,10 @@ public class AddReservationServlet extends HttpServlet {
                 return;
             }
 
-            // 3. Room availability (critical - use date-aware version!)
+            // === Availability & Rate ===
             int roomId = roomDAO.findAvailableRoomId(roomType, checkIn, checkOut);
             if (roomId == -1) {
-                req.setAttribute("error", "No " + roomType + " room available for " + checkIn + " to " + checkOut);
+                req.setAttribute("error", "No " + roomType + " room available for selected dates.");
                 forwardWithError(req, resp);
                 return;
             }
@@ -85,7 +89,7 @@ public class AddReservationServlet extends HttpServlet {
                 return;
             }
 
-            // 4. Wake-up call (safe parsing)
+            // === Wake-up call (safe parsing) ===
             Time wakeUpTime = null;
             if (!isBlank(wakeUpCallStr)) {
                 try {
@@ -98,7 +102,7 @@ public class AddReservationServlet extends HttpServlet {
                 }
             }
 
-            // 5. Guest handling (create or reuse)
+            // === Guest handling ===
             Guest guest = guestDAO.findByContactOrNic(contact, nicPassport);
             if (guest == null) {
                 guest = new Guest();
@@ -110,17 +114,20 @@ public class AddReservationServlet extends HttpServlet {
                 guest.setNationality(nationality);
                 guest.setContact(contact);
                 guest.setEmail(email);
-                int newId = guestDAO.save(guest);
-                if (newId == -1) {
-                    throw new RuntimeException("Failed to save new guest");
+
+                int newGuestId = guestDAO.save(guest);
+                if (newGuestId == -1) {
+                    req.setAttribute("error", "Failed to save guest details. Possible duplicate contact/NIC or database issue.");
+                    forwardWithError(req, resp);
+                    return;
                 }
-                guest.setId(newId);
+                guest.setId(newGuestId);
             }
 
-            // 6. Create & populate reservation
+            // === Build reservation ===
             Reservation res = new Reservation();
             res.setGuestId(guest.getId());
-            res.setRoomId(roomId);               // safe primitive int
+            res.setRoomId(roomId);
             res.setCheckIn(checkIn);
             res.setCheckOut(checkOut);
             res.setRatePerNight(rate);
@@ -132,19 +139,36 @@ public class AddReservationServlet extends HttpServlet {
             res.setLoyaltyNumber(loyaltyNumber);
             res.setReservationNumber(generateReservationNumber());
 
-            // 7. Save
-            if (!reservationDAO.save(res)) {
-                req.setAttribute("error", "Failed to save reservation. Database error.");
+            // === Transaction: Save reservation + mark room booked ===
+            conn = DBUtil.getConnection();
+            conn.setAutoCommit(false);
+
+            try {
+                // Save reservation
+                if (!reservationDAO.save(res, conn)) {
+                    throw new SQLException("Failed to save reservation");
+                }
+
+                // Mark room as booked
+                if (!roomDAO.markAsBooked(roomId, conn)) {
+                    throw new SQLException("Failed to update room status to booked");
+                }
+
+                conn.commit();
+
+                req.getSession().setAttribute("successMsg", "Reservation created successfully! Number: " + res.getReservationNumber());
+                resp.sendRedirect("dashboard");
+
+            } catch (SQLException e) {
+                rollbackQuietly(conn);
+                req.setAttribute("error", "Failed to create reservation: Database error - " + e.getMessage());
                 forwardWithError(req, resp);
-                return;
+            } finally {
+                resetAutoCommitAndClose(conn);
             }
 
-            // 8. Success
-            req.getSession().setAttribute("successMsg", "Reservation created successfully! Number: " + res.getReservationNumber());
-            resp.sendRedirect("dashboard");
-
         } catch (Exception e) {
-            e.printStackTrace(); // log for debugging
+            e.printStackTrace();
             req.setAttribute("error", "Unexpected error: " + e.getMessage());
             forwardWithError(req, resp);
         }
@@ -172,7 +196,24 @@ public class AddReservationServlet extends HttpServlet {
     }
 
     private String generateReservationNumber() {
-        // Replace with better logic later (DB sequence, counter, etc.)
         return "RES-" + java.time.Year.now().getValue() + "-" + (System.nanoTime() % 1000000);
+    }
+
+    // Helpers for transaction management
+    private void rollbackQuietly(Connection conn) {
+        if (conn != null) {
+            try {
+                conn.rollback();
+            } catch (SQLException ignored) {}
+        }
+    }
+
+    private void resetAutoCommitAndClose(Connection conn) {
+        if (conn != null) {
+            try {
+                conn.setAutoCommit(true);
+                conn.close();
+            } catch (SQLException ignored) {}
+        }
     }
 }

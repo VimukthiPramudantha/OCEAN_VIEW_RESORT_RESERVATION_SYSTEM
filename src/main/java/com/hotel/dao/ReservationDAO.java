@@ -11,8 +11,12 @@ import java.util.List;
 
 public class ReservationDAO {
 
-/**
-     * Count reservations where check-in is today and status is 'confirmed'
+    // ------------------------------------------------------
+    // Summary / Dashboard queries
+    // ------------------------------------------------------
+
+    /**
+     * Count reservations with check-in today and confirmed status
      */
     public int countTodayCheckins() {
         String sql = """
@@ -25,7 +29,7 @@ public class ReservationDAO {
     }
 
     /**
-     * Count reservations where check-out is today and status is 'checked_in'
+     * Count reservations with check-out today and checked-in status
      */
     public int countTodayCheckouts() {
         String sql = """
@@ -38,7 +42,8 @@ public class ReservationDAO {
     }
 
     /**
-     * Sum total_amount for today's check-outs (never returns null)
+     * Sum total_amount for today's checked-out reservations
+     * Returns 0.00 if no matching rows (never null)
      */
     public BigDecimal sumTodayRevenue() {
         String sql = """
@@ -56,15 +61,20 @@ public class ReservationDAO {
                 return rs.getBigDecimal(1);
             }
         } catch (SQLException e) {
-            System.err.println("Error calculating today revenue: " + e.getMessage());
+            System.err.println("Error calculating today's revenue: " + e.getMessage());
         }
         return BigDecimal.ZERO;
     }
 
+    // ------------------------------------------------------
+    // CRUD Operations
+    // ------------------------------------------------------
+
     /**
-     * Save a new reservation with transaction
+     * Save new reservation (transaction managed by caller)
+     * Returns true if successful, false otherwise
      */
-    public boolean save(Reservation res) {
+    public boolean save(Reservation res, Connection conn) throws SQLException {
         String sql = """
             INSERT INTO reservations (
                 reservation_number, guest_id, room_id,
@@ -75,77 +85,75 @@ public class ReservationDAO {
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """;
 
-        Connection conn = null;
-        try {
-            conn = DBUtil.getConnection();
-            conn.setAutoCommit(false);
+        try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setString(1, res.getReservationNumber());
+            ps.setInt(2, res.getGuestId());
+            ps.setInt(3, res.getRoomId());
+            ps.setDate(4, res.getCheckIn());
+            ps.setDate(5, res.getCheckOut());
+            ps.setDouble(6, res.getRatePerNight());
+            ps.setString(7, res.getSpecialRequests());
+            ps.setString(8, res.getVehicleNumber());
+            ps.setTime(9, res.getWakeUpCall());
+            ps.setBoolean(10, Boolean.TRUE.equals(res.getLuggageStorage()));
+            ps.setString(11, res.getLoyaltyNumber());
+            ps.setString(12, res.getRoomPreference());
 
-            try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-                ps.setString(1, res.getReservationNumber());
-                ps.setInt(2, res.getGuestId());
-                ps.setInt(3, res.getRoomId());
-                ps.setDate(4, res.getCheckIn());
-                ps.setDate(5, res.getCheckOut());
-                ps.setDouble(6, res.getRatePerNight());
-                ps.setString(7, res.getSpecialRequests());
-                ps.setString(8, res.getVehicleNumber());
-                ps.setTime(9, res.getWakeUpCall());
-                ps.setBoolean(10, Boolean.TRUE.equals(res.getLuggageStorage()));
-                ps.setString(11, res.getLoyaltyNumber());
-                ps.setString(12, res.getRoomPreference());
-
-                int rows = ps.executeUpdate();
-                if (rows > 0) {
-                    try (ResultSet rs = ps.getGeneratedKeys()) {
-                        if (rs.next()) {
-                            res.setId(rs.getInt(1));
-                        }
+            int rows = ps.executeUpdate();
+            if (rows > 0) {
+                try (ResultSet rs = ps.getGeneratedKeys()) {
+                    if (rs.next()) {
+                        res.setId(rs.getInt(1));
                     }
-                    conn.commit();
-                    return true;
                 }
+                return true;
             }
-        } catch (SQLException e) {
-            System.err.println("Reservation save failed: " + e.getMessage());
-            rollbackQuietly(conn);
-        } finally {
-            resetAutoCommitAndClose(conn);
+            return false;
         }
-        return false;
     }
 
     /**
-     * Delete a reservation by ID
-     * Returns true if deleted, false otherwise
+     * Delete a reservation by ID and free up the associated room
+     * Returns true if successful, false otherwise
      */
     public boolean delete(int reservationId) {
+        String findRoomSql = "SELECT room_id FROM reservations WHERE reservation_id = ?";
         String deleteResSql = "DELETE FROM reservations WHERE reservation_id = ?";
-        String updateRoomSql = """
-        UPDATE rooms r
-        SET status = 'available'
-        WHERE r.room_id = (
-            SELECT room_id FROM reservations WHERE reservation_id = ?
-        )
-    """;
+        String freeRoomSql = "UPDATE rooms SET status = 'available' WHERE room_id = ?";
 
         Connection conn = null;
         try {
             conn = DBUtil.getConnection();
             conn.setAutoCommit(false);
 
-            // Step 1: Delete reservation
+            // Step 1: Get the room_id BEFORE deleting
+            Integer roomId = null;
+            try (PreparedStatement psFind = conn.prepareStatement(findRoomSql)) {
+                psFind.setInt(1, reservationId);
+                try (ResultSet rs = psFind.executeQuery()) {
+                    if (rs.next()) {
+                        roomId = rs.getInt("room_id");
+                    } else {
+                        return false; // reservation doesn't exist
+                    }
+                }
+            }
+
+            // Step 2: Delete the reservation
             try (PreparedStatement psDelete = conn.prepareStatement(deleteResSql)) {
                 psDelete.setInt(1, reservationId);
                 int rowsDeleted = psDelete.executeUpdate();
                 if (rowsDeleted == 0) {
-                    return false; // nothing to delete
+                    return false;
                 }
             }
 
-            // Step 2: Free the room
-            try (PreparedStatement psUpdate = conn.prepareStatement(updateRoomSql)) {
-                psUpdate.setInt(1, reservationId);
-                psUpdate.executeUpdate();  // no need to check rows — room might already be free
+            // Step 3: Free the room (only if we found a room_id)
+            if (roomId != null) {
+                try (PreparedStatement psFree = conn.prepareStatement(freeRoomSql)) {
+                    psFree.setInt(1, roomId);
+                    psFree.executeUpdate();  // no need to check rows — room might already be free
+                }
             }
 
             conn.commit();
@@ -153,6 +161,7 @@ public class ReservationDAO {
 
         } catch (SQLException e) {
             System.err.println("Delete + free room failed: " + e.getMessage());
+            e.printStackTrace();
             rollbackQuietly(conn);
             return false;
         } finally {
@@ -161,7 +170,7 @@ public class ReservationDAO {
     }
 
     /**
-     * Update reservation status (e.g. to 'cancelled')
+     * Update reservation status (e.g. 'cancelled', 'checked_in')
      */
     public boolean updateStatus(int reservationId, String newStatus) {
         String sql = "UPDATE reservations SET status = ? WHERE reservation_id = ?";
@@ -177,9 +186,12 @@ public class ReservationDAO {
         }
     }
 
+    // ------------------------------------------------------
+    // Query / Display methods
+    // ------------------------------------------------------
 
     /**
-     * Find all reservations with guest name for display
+     * Find all reservations with guest name for display purposes
      */
     public List<ReservationDisplayDTO> findAll() {
         List<ReservationDisplayDTO> list = new ArrayList<>();
@@ -195,11 +207,10 @@ public class ReservationDAO {
              ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
-                ReservationDisplayDTO dto = mapToDisplayDTO(rs);
-                list.add(dto);
+                list.add(mapToDisplayDTO(rs));
             }
         } catch (SQLException e) {
-            System.err.println("Find all reservations failed: " + e.getMessage());
+            System.err.println("Failed to fetch all reservations: " + e.getMessage());
         }
         return list;
     }
@@ -225,12 +236,15 @@ public class ReservationDAO {
                 }
             }
         } catch (SQLException e) {
-            System.err.println("Find reservation by ID failed: " + e.getMessage());
+            System.err.println("Failed to fetch reservation ID " + id + ": " + e.getMessage());
         }
         return null;
     }
 
-    // Helper: map ResultSet to DTO
+    // ------------------------------------------------------
+    // Helpers
+    // ------------------------------------------------------
+
     private ReservationDisplayDTO mapToDisplayDTO(ResultSet rs) throws SQLException {
         ReservationDisplayDTO dto = new ReservationDisplayDTO();
         dto.setId(rs.getInt("reservation_id"));
@@ -247,11 +261,11 @@ public class ReservationDAO {
         dto.setLuggageStorage(rs.getBoolean("luggage_storage"));
         dto.setLoyaltyNumber(rs.getString("loyalty_number"));
         dto.setRoomPreference(rs.getString("room_preference"));
-        // Add more if needed (e.g. status)
+        // Add status if column exists
+        // dto.setStatus(rs.getString("status"));
         return dto;
     }
 
-// Helper for COUNT queries
     private int executeCountQuery(String sql) {
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
@@ -265,7 +279,6 @@ public class ReservationDAO {
         return 0;
     }
 
-    // Helper: rollback without throwing
     private void rollbackQuietly(Connection conn) {
         if (conn != null) {
             try {
@@ -274,7 +287,6 @@ public class ReservationDAO {
         }
     }
 
-    // Helper: reset auto-commit and close
     private void resetAutoCommitAndClose(Connection conn) {
         if (conn != null) {
             try {
