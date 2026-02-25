@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Ocean View Resort</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         :root {
             --primary: #0077b6;
@@ -95,6 +96,12 @@
             border-radius: 10px;
             font-size: 14px;
             transition: all 0.3s ease;
+        }
+
+        .nav-link i {
+            margin-right: 12px;
+            width: 20px;
+            text-align: center;
         }
 
         .nav-link:hover {
@@ -270,23 +277,35 @@
 
     <ul class="nav-menu">
         <li class="nav-item">
-            <a href="dashboard" class="nav-link active">Dashboard</a>
+            <a href="dashboard" class="nav-link active">
+                <i class="fas fa-chart-line"></i> <span>Dashboard</span>
+            </a>
         </li>
         <li class="nav-item">
-            <a href="manage-reservations" class="nav-link"><i class="fas fa-list-check"></i> Manage Reservations</a>
+            <a href="manage-reservations" class="nav-link">
+                <i class="fas fa-calendar-check"></i> <span>Manage Bookings</span>
+            </a>
         </li>
         <li class="nav-item">
-            <a href="view-reservations" class="nav-link">Reservations</a>
+            <a href="add-reservation" class="nav-link">
+                <i class="fas fa-plus-circle"></i> <span>New Reservation</span>
+            </a>
         </li>
         <li class="nav-item">
-            <a href="check-availability" class="nav-link">Availability</a>
+            <a href="check-availability" class="nav-link">
+                <i class="fas fa-search"></i> <span>Availability</span>
+            </a>
         </li>
         <li class="nav-item">
-            <a href="help" class="nav-link">Help & Portal Info</a>
+            <a href="help" class="nav-link">
+                <i class="fas fa-question-circle"></i> <span>Portal Help</span>
+            </a>
         </li>
     </ul>
 
-    <a href="logout" class="nav-link logout-link">Logout Session</a>
+    <a href="logout" class="nav-link logout-link">
+        <i class="fas fa-sign-out-alt"></i> <span>Logout Session</span>
+    </a>
 </aside>
 
 <main class="main-content">

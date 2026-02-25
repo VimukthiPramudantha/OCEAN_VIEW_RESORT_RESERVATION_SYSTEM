@@ -6,12 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>New Reservation - Ocean View Resort</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         :root {
             --primary: #0077b6;
             --primary-hover: #023e8a;
             --bg-gradient: linear-gradient(135deg, #00b4db, #0083b0);
-            --glass-bg: rgba(255, 255, 255, 0.95);
+            --sidebar-bg: rgba(255, 255, 255, 0.95);
             --text-main: #333;
             --text-muted: #666;
             --error: #e63946;
@@ -26,46 +27,131 @@
         }
 
         body {
-            min-height: 100vh;
+            height: 100vh;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--bg-gradient);
-            background-attachment: fixed;
-            padding: 40px 20px;
+            background: #f0f4f8;
+            overflow: hidden;
         }
 
-        .container {
-            background: var(--glass-bg);
-            max-width: 800px;
-            width: 100%;
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            animation: fadeIn 0.6s ease-out;
+        /* Sidebar Styling (Consistent) */
+        .sidebar {
+            width: 280px;
+            background: var(--sidebar-bg);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 30px 20px;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+            z-index: 100;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .header {
+        .brand {
             text-align: center;
             margin-bottom: 40px;
         }
 
-        .header h1 {
-            font-size: 28px;
+        .brand h1 {
             color: var(--primary);
+            font-size: 22px;
             font-weight: 600;
+            letter-spacing: 1px;
         }
 
-        .header p {
+        .user-profile {
+            background: rgba(0, 119, 182, 0.05);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+
+        .user-name {
+            display: block;
+            font-weight: 600;
             font-size: 14px;
+            color: var(--text-main);
+        }
+
+        .user-role {
+            font-size: 11px;
             color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .nav-menu {
+            list-style: none;
+            flex-grow: 1;
+        }
+
+        .nav-item {
+            margin-bottom: 5px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            text-decoration: none;
+            color: var(--text-muted);
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link i {
+            margin-right: 12px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .nav-link:hover {
+            background: rgba(0, 119, 182, 0.1);
+            color: var(--primary);
+        }
+
+        .nav-link.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 10px rgba(0, 119, 182, 0.3);
+        }
+
+        .logout-link {
+            margin-top: auto;
+            color: var(--danger);
+        }
+
+        .logout-link:hover {
+            background: rgba(230, 57, 70, 0.1);
+            color: var(--danger);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex-grow: 1;
+            height: 100vh;
+            overflow-y: auto;
+            padding: 40px;
+            background: #f8fbff;
+        }
+
+        .form-container {
+            background: white;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            color: var(--primary);
+            font-weight: 600;
         }
 
         /* Progress Bar */
@@ -122,7 +208,6 @@
             font-size: 11px;
             white-space: nowrap;
             color: var(--text-muted);
-            font-weight: 400;
         }
 
         /* Form Steps */
@@ -138,15 +223,6 @@
         @keyframes slideIn {
             from { opacity: 0; transform: translateX(10px); }
             to { opacity: 1; transform: translateX(0); }
-        }
-
-        .step-title {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 25px;
-            color: var(--text-main);
-            border-bottom: 2px solid #f0f4f8;
-            padding-bottom: 10px;
         }
 
         .grid {
@@ -176,40 +252,17 @@
             border-radius: 10px;
             font-size: 14px;
             transition: all 0.3s ease;
-            background: rgba(255, 255, 255, 0.8);
         }
 
-        .form-group input:focus, 
-        .form-group select:focus, 
-        .form-group textarea:focus {
+        .form-group input:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: 0 0 8px rgba(0, 119, 182, 0.1);
         }
 
-        .form-group textarea {
-            height: 80px;
-            resize: vertical;
-        }
-
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .checkbox-group input {
-            width: auto;
-        }
-
-        /* Navigation Buttons */
         .btn-container {
             display: flex;
             justify-content: space-between;
             margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
         }
 
         .btn {
@@ -219,33 +272,10 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
-            text-align: center;
         }
 
-        .btn-prev {
-            background: #eee;
-            color: var(--text-main);
-            border: none;
-        }
-
-        .btn-prev:hover {
-            background: #e0e0e0;
-        }
-
-        .btn-next, .btn-submit {
-            background: var(--primary);
-            color: white;
-            border: none;
-            flex-grow: 0.5;
-        }
-
-        .btn-next:hover, .btn-submit:hover {
-            background: var(--primary-hover);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 119, 182, 0.2);
-        }
+        .btn-prev { background: #eee; border: none; }
+        .btn-next, .btn-submit { background: var(--primary); color: white; border: none; flex-grow: 0.5; }
 
         .error-msg {
             background: rgba(230, 57, 70, 0.1);
@@ -253,200 +283,205 @@
             padding: 12px;
             border-radius: 10px;
             text-align: center;
-            font-size: 14px;
             margin-bottom: 25px;
-            border: 1px solid rgba(230, 57, 70, 0.2);
         }
 
-        .back-link {
-            display: block;
-            text-align: center;
-            margin-top: 20px;
-            font-size: 13px;
-            color: var(--text-muted);
-            text-decoration: none;
-            transition: color 0.3s ease;
-        }
-
-        .back-link:hover {
-            color: var(--primary);
+        @media (max-width: 992px) {
+            .sidebar { width: 80px; }
+            .brand, .user-profile, .nav-link span { display: none; }
+            .nav-link i { margin-right: 0; }
         }
 
         @media (max-width: 600px) {
-            .grid { grid-template-columns: 1fr; }
-            .container { padding: 25px; }
+            body { flex-direction: column; }
+            .sidebar { width: 100%; height: auto; }
+            .main-content { padding: 20px; }
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
-        <h1>New Reservation</h1>
-        <p>Register a new guest and book their stay</p>
+<aside class="sidebar">
+    <div class="brand">
+        <h1>OCEAN VIEW</h1>
     </div>
 
-    <!-- Progress Indicator -->
-    <div class="progress-stepper">
-        <div class="progress-step active" id="p1">1 <span class="step-label">Guest Details</span></div>
-        <div class="progress-step" id="p2">2 <span class="step-label">Stay Details</span></div>
-        <div class="progress-step" id="p3">3 <span class="step-label">Preferences</span></div>
+    <div class="user-profile">
+        <span class="user-name">${user.fullName}</span>
+        <span class="user-role">${user.role.toUpperCase()}</span>
     </div>
 
-    <% if (request.getAttribute("error") != null) { %>
-    <div class="error-msg">
-        <%= request.getAttribute("error") %>
+    <ul class="nav-menu">
+        <li class="nav-item">
+            <a href="dashboard" class="nav-link">
+                <i class="fas fa-chart-line"></i> <span>Dashboard</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="manage-reservations" class="nav-link">
+                <i class="fas fa-calendar-check"></i> <span>Manage Bookings</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="add-reservation" class="nav-link active">
+                <i class="fas fa-plus-circle"></i> <span>New Reservation</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="check-availability" class="nav-link">
+                <i class="fas fa-search"></i> <span>Availability</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="help" class="nav-link">
+                <i class="fas fa-question-circle"></i> <span>Portal Help</span>
+            </a>
+        </li>
+    </ul>
+
+    <a href="logout" class="nav-link logout-link">
+        <i class="fas fa-sign-out-alt"></i> <span>Logout Session</span>
+    </a>
+</aside>
+
+<main class="main-content">
+    <div class="form-container">
+        <div class="header">
+            <h1>New Reservation</h1>
+            <p>Register a guest and manage their booking stay</p>
+        </div>
+
+        <!-- Progress Indicator -->
+        <div class="progress-stepper">
+            <div class="progress-step active" id="p1">1 <span class="step-label">Guest Info</span></div>
+            <div class="progress-step" id="p2">2 <span class="step-label">Stay Info</span></div>
+            <div class="progress-step" id="p3">3 <span class="step-label">Preferences</span></div>
+        </div>
+
+        <% if (request.getAttribute("error") != null) { %>
+        <div class="error-msg">
+            <%= request.getAttribute("error") %>
+        </div>
+        <% } %>
+
+        <form id="reservationForm" action="add-reservation" method="post">
+            
+            <!-- Step 1 -->
+            <div id="step1" class="form-step active">
+                <div class="grid">
+                    <div class="form-group">
+                        <label>NIC/Passport Number</label>
+                        <input type="text" name="nicPassport" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" name="fullName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Nationality</label>
+                        <input type="text" name="nationality" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Contact Number</label>
+                        <input type="tel" name="contact" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" name="email">
+                    </div>
+                </div>
+                <div class="grid" style="margin-top: 10px;">
+                    <div class="form-group">
+                        <label>Adults</label>
+                        <input type="number" name="adults" min="1" value="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Children</label>
+                        <input type="number" name="children" min="0" value="0" required>
+                    </div>
+                </div>
+                <div class="btn-container">
+                    <div></div>
+                    <button type="button" class="btn btn-next" onclick="nextStep(2)">Next: Stay Details</button>
+                </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div id="step2" class="form-step">
+                <div class="grid">
+                    <div class="form-group">
+                        <label>Check-in Date</label>
+                        <input type="date" name="checkIn" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Check-out Date</label>
+                        <input type="date" name="checkOut" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Room Type</label>
+                        <select name="roomType" required>
+                            <option value="Standard">Standard</option>
+                            <option value="Deluxe">Deluxe</option>
+                            <option value="Suite">Suite</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Vehicle Number</label>
+                        <input type="text" name="vehicleNumber">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Special Requests</label>
+                    <textarea name="specialRequests"></textarea>
+                </div>
+                <div class="btn-container">
+                    <button type="button" class="btn btn-prev" onclick="prevStep(1)">Previous</button>
+                    <button type="button" class="btn btn-next" onclick="nextStep(3)">Next: Preferences</button>
+                </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div id="step3" class="form-step">
+                <div class="form-group">
+                    <label>Room Preference</label>
+                    <textarea name="roomPreference"></textarea>
+                </div>
+                <div class="grid">
+                    <div class="form-group">
+                        <label>Wake-up Call Time</label>
+                        <input type="time" name="wakeUpCall">
+                    </div>
+                    <div class="form-group">
+                        <label>Loyalty Number</label>
+                        <input type="text" name="loyaltyNumber">
+                    </div>
+                </div>
+                <div class="btn-container">
+                    <button type="button" class="btn btn-prev" onclick="prevStep(2)">Previous</button>
+                    <button type="submit" class="btn btn-submit">Confirm Reservation</button>
+                </div>
+            </div>
+        </form>
     </div>
-    <% } %>
-
-    <form id="reservationForm" action="add-reservation" method="post">
-        
-        <!-- Step 1: Guest Details -->
-        <div id="step1" class="form-step active">
-            <h2 class="step-title">Guest Information</h2>
-            <div class="grid">
-                <div class="form-group">
-                    <label>NIC/Passport Number</label>
-                    <input type="text" name="nicPassport" placeholder="ID or Passport" required>
-                </div>
-                <div class="form-group">
-                    <label>Full Name</label>
-                    <input type="text" name="fullName" placeholder="As per ID" required>
-                </div>
-                <div class="form-group">
-                    <label>Nationality / Country</label>
-                    <input type="text" name="nationality" placeholder="e.g. Sri Lankan" required>
-                </div>
-                <div class="form-group">
-                    <label>Contact Number</label>
-                    <input type="tel" name="contact" placeholder="+94 XXXXXXXXX" required>
-                </div>
-                <div class="form-group">
-                    <label>Email Address (Optional)</label>
-                    <input type="email" name="email" placeholder="example@mail.com">
-                </div>
-            </div>
-            <div class="grid" style="margin-top: 10px;">
-                <div class="form-group">
-                    <label>Adults</label>
-                    <input type="number" name="adults" min="1" value="1" required>
-                </div>
-                <div class="form-group">
-                    <label>Children</label>
-                    <input type="number" name="children" min="0" value="0" required>
-                </div>
-                <div class="form-group">
-                    <label>Infants</label>
-                    <input type="number" name="infants" min="0" value="0" required>
-                </div>
-            </div>
-            <div class="btn-container">
-                <div></div> <!-- Spacer -->
-                <button type="button" class="btn btn-next" onclick="nextStep(2)">Next: Stay Details</button>
-            </div>
-        </div>
-
-        <!-- Step 2: Stay Details -->
-        <div id="step2" class="form-step">
-            <h2 class="step-title">Stay & Room Details</h2>
-            <div class="grid">
-                <div class="form-group">
-                    <label>Check-in Date</label>
-                    <input type="date" name="checkIn" required>
-                </div>
-                <div class="form-group">
-                    <label>Check-out Date</label>
-                    <input type="date" name="checkOut" required>
-                </div>
-                <div class="form-group">
-                    <label>Room Type</label>
-                    <select name="roomType" required>
-                        <option value="Standard">Standard</option>
-                        <option value="Deluxe">Deluxe</option>
-                        <option value="Suite">Suite</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Vehicle Number</label>
-                    <input type="text" name="vehicleNumber" placeholder="For parking allocation">
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Special Requests / Remarks</label>
-                <textarea name="specialRequests" placeholder="Any specific needs or notes..."></textarea>
-            </div>
-            <div class="btn-container">
-                <button type="button" class="btn btn-prev" onclick="prevStep(1)">Previous</button>
-                <button type="button" class="btn btn-next" onclick="nextStep(3)">Next: Preferences</button>
-            </div>
-        </div>
-
-        <!-- Step 3: Preferences -->
-        <div id="step3" class="form-step">
-            <h2 class="step-title">Optional Preferences</h2>
-            <div class="form-group">
-                <label>Room Preference</label>
-                <textarea name="roomPreference" placeholder="Floor, view (ocean/garden), smoking/non-smoking..."></textarea>
-            </div>
-            <div class="grid">
-                <div class="form-group">
-                    <label>Wake-up Call Time</label>
-                    <input type="time" name="wakeUpCall">
-                </div>
-                <div class="form-group">
-                    <label>Loyalty / Membership No.</label>
-                    <input type="text" name="loyaltyNumber" placeholder="If applicable">
-                </div>
-            </div>
-            <div class="checkbox-group">
-                <input type="checkbox" id="luggage" name="luggageStorage">
-                <label for="luggage" style="font-weight: 400; font-size: 14px;">Require luggage storage after checkout?</label>
-            </div>
-            <div class="btn-container">
-                <button type="button" class="btn btn-prev" onclick="prevStep(2)">Previous</button>
-                <button type="submit" class="btn btn-submit">Confirm & Save Reservation</button>
-            </div>
-        </div>
-    </form>
-
-    <a href="dashboard" class="back-link">Cancel and return to Dashboard</a>
-</div>
+</main>
 
 <script>
     function nextStep(step) {
-        // Hide current step
         document.querySelector('.form-step.active').classList.remove('active');
-        // Show next step
         document.getElementById('step' + step).classList.add('active');
-        
-        // Update progress bar
         updateProgress(step);
     }
-
     function prevStep(step) {
-        // Hide current step
         document.querySelector('.form-step.active').classList.remove('active');
-        // Show prev step
         document.getElementById('step' + step).classList.add('active');
-        
-        // Update progress bar
         updateProgress(step);
     }
-
     function updateProgress(step) {
-        // Reset all steps
-        document.querySelectorAll('.progress-step').forEach(el => {
-            el.classList.remove('active', 'completed');
-        });
-
-        // Set active and completed states
+        document.querySelectorAll('.progress-step').forEach(el => el.classList.remove('active', 'completed'));
         for(let i=1; i<=3; i++) {
             const el = document.getElementById('p' + i);
-            if(i < step) {
-                el.classList.add('completed');
-            } else if(i === step) {
-                el.classList.add('active');
-            }
+            if(i < step) el.classList.add('completed');
+            else if(i === step) el.classList.add('active');
         }
     }
 </script>
