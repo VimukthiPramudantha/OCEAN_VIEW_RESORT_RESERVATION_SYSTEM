@@ -119,28 +119,45 @@ public class ReservationDAO {
      * Returns true if deleted, false otherwise
      */
     public boolean delete(int reservationId) {
-        String sql = "DELETE FROM reservations WHERE reservation_id = ?";
+        String deleteResSql = "DELETE FROM reservations WHERE reservation_id = ?";
+        String updateRoomSql = """
+        UPDATE rooms r
+        SET status = 'available'
+        WHERE r.room_id = (
+            SELECT room_id FROM reservations WHERE reservation_id = ?
+        )
+    """;
 
         Connection conn = null;
         try {
             conn = DBUtil.getConnection();
             conn.setAutoCommit(false);
 
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setInt(1, reservationId);
-                int rows = ps.executeUpdate();
-                if (rows > 0) {
-                    conn.commit();
-                    return true;
+            // Step 1: Delete reservation
+            try (PreparedStatement psDelete = conn.prepareStatement(deleteResSql)) {
+                psDelete.setInt(1, reservationId);
+                int rowsDeleted = psDelete.executeUpdate();
+                if (rowsDeleted == 0) {
+                    return false; // nothing to delete
                 }
             }
+
+            // Step 2: Free the room
+            try (PreparedStatement psUpdate = conn.prepareStatement(updateRoomSql)) {
+                psUpdate.setInt(1, reservationId);
+                psUpdate.executeUpdate();  // no need to check rows — room might already be free
+            }
+
+            conn.commit();
+            return true;
+
         } catch (SQLException e) {
-            System.err.println("Delete reservation failed: " + e.getMessage());
+            System.err.println("Delete + free room failed: " + e.getMessage());
             rollbackQuietly(conn);
+            return false;
         } finally {
             resetAutoCommitAndClose(conn);
         }
-        return false;
     }
 
     /**
