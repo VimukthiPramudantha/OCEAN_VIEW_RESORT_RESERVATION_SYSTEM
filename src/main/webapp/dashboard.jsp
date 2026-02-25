@@ -340,8 +340,8 @@
 
         <div class="action-card">
             <h3>Manage Reservations</h3>
-            <p>View, update, cancel or delete existing bookings.</p>
-            <a href="manage-reservations" class="btn-action">Manage Now</a>
+            <p>View, update, cancel, delete, or see history of bookings.</p>
+            <a href="manage-reservations" class="btn-action">Manage Reservations</a>
         </div>
 
         <div class="action-card">
