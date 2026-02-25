@@ -273,6 +273,9 @@
             <a href="dashboard" class="nav-link active">Dashboard</a>
         </li>
         <li class="nav-item">
+            <a href="manage-reservations" class="nav-link"><i class="fas fa-list-check"></i> Manage Reservations</a>
+        </li>
+        <li class="nav-item">
             <a href="view-reservations" class="nav-link">Reservations</a>
         </li>
         <li class="nav-item">
@@ -336,9 +339,9 @@
         </div>
 
         <div class="action-card">
-            <h3>Manage Bookings</h3>
-            <p>Search, filter, and edit existing guest reservations.</p>
-            <a href="view-reservations" class="btn-action">View All</a>
+            <h3>Manage Reservations</h3>
+            <p>View, update, cancel or delete existing bookings.</p>
+            <a href="manage-reservations" class="btn-action">Manage Now</a>
         </div>
 
         <div class="action-card">
