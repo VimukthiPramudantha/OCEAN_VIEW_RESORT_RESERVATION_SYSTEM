@@ -243,6 +243,26 @@
             color: var(--text-main);
         }
 
+        .required-star {
+            color: var(--error);
+            margin-left: 3px;
+        }
+
+        .step-error {
+            color: var(--error);
+            font-size: 13px;
+            margin-bottom: 15px;
+            display: none;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .form-group input.invalid, 
+        .form-group select.invalid, 
+        .form-group textarea.invalid {
+            border-color: var(--error);
+        }
+
         .form-group input, 
         .form-group select, 
         .form-group textarea {
@@ -367,69 +387,71 @@
         <form id="reservationForm" action="add-reservation" method="post">
             
             <!-- Step 1 -->
-            <div id="step1" class="form-step active">
-                <div class="grid">
-                    <div class="form-group">
-                        <label>NIC/Passport Number</label>
-                        <input type="text" name="nicPassport" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Full Name</label>
-                        <input type="text" name="fullName" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Nationality</label>
-                        <input type="text" name="nationality" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Contact Number</label>
-                        <input type="tel" name="contact" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Email Address</label>
-                        <input type="email" name="email">
-                    </div>
+        <div id="step1" class="form-step active">
+            <div id="error1" class="step-error">Please fill in all required fields marked with * before proceeding.</div>
+            <div class="grid">
+                <div class="form-group">
+                    <label>NIC/Passport Number<span class="required-star">*</span></label>
+                    <input type="text" name="nicPassport" required>
                 </div>
-                <div class="grid" style="margin-top: 10px;">
-                    <div class="form-group">
-                        <label>Adults</label>
-                        <input type="number" name="adults" min="1" value="1" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Children</label>
-                        <input type="number" name="children" min="0" value="0" required>
-                    </div>
+                <div class="form-group">
+                    <label>Full Name<span class="required-star">*</span></label>
+                    <input type="text" name="fullName" required>
                 </div>
-                <div class="btn-container">
-                    <div></div>
-                    <button type="button" class="btn btn-next" onclick="nextStep(2)">Next: Stay Details</button>
+                <div class="form-group">
+                    <label>Nationality<span class="required-star">*</span></label>
+                    <input type="text" name="nationality" required>
+                </div>
+                <div class="form-group">
+                    <label>Contact Number<span class="required-star">*</span></label>
+                    <input type="tel" name="contact" required>
+                </div>
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" name="email">
                 </div>
             </div>
-
-            <!-- Step 2 -->
-            <div id="step2" class="form-step">
-                <div class="grid">
-                    <div class="form-group">
-                        <label>Check-in Date</label>
-                        <input type="date" name="checkIn" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Check-out Date</label>
-                        <input type="date" name="checkOut" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Room Type</label>
-                        <select name="roomType" required>
-                            <option value="Standard">Standard</option>
-                            <option value="Deluxe">Deluxe</option>
-                            <option value="Suite">Suite</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Vehicle Number</label>
-                        <input type="text" name="vehicleNumber">
-                    </div>
+            <div class="grid" style="margin-top: 10px;">
+                <div class="form-group">
+                    <label>Adults<span class="required-star">*</span></label>
+                    <input type="number" name="adults" min="1" value="1" required>
                 </div>
+                <div class="form-group">
+                    <label>Children<span class="required-star">*</span></label>
+                    <input type="number" name="children" min="0" value="0" required>
+                </div>
+            </div>
+            <div class="btn-container">
+                <div></div>
+                <button type="button" class="btn btn-next" onclick="nextStep(2)">Next: Stay Details</button>
+            </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div id="step2" class="form-step">
+            <div id="error2" class="step-error">Please fill in all required fields marked with * before proceeding.</div>
+            <div class="grid">
+                <div class="form-group">
+                    <label>Check-in Date<span class="required-star">*</span></label>
+                    <input type="date" name="checkIn" required>
+                </div>
+                <div class="form-group">
+                    <label>Check-out Date<span class="required-star">*</span></label>
+                    <input type="date" name="checkOut" required>
+                </div>
+                <div class="form-group">
+                    <label>Room Type<span class="required-star">*</span></label>
+                    <select name="roomType" required>
+                        <option value="Standard">Standard</option>
+                        <option value="Deluxe">Deluxe</option>
+                        <option value="Suite">Suite</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Vehicle Number</label>
+                    <input type="text" name="vehicleNumber">
+                </div>
+            </div>
                 <div class="form-group">
                     <label>Special Requests</label>
                     <textarea name="specialRequests"></textarea>
@@ -455,6 +477,10 @@
                         <label>Loyalty Number</label>
                         <input type="text" name="loyaltyNumber">
                     </div>
+                    <div class="checkbox-group">
+                <input type="checkbox" id="luggage" name="luggageStorage">
+                <label for="luggage" style="font-weight: 400; font-size: 14px;">Require luggage storage after checkout?</label>
+            </div>
                 </div>
                 <div class="btn-container">
                     <button type="button" class="btn btn-prev" onclick="prevStep(2)">Previous</button>
@@ -466,16 +492,48 @@
 </main>
 
 <script>
-    function nextStep(step) {
-        document.querySelector('.form-step.active').classList.remove('active');
-        document.getElementById('step' + step).classList.add('active');
-        updateProgress(step);
+    function validateStep(stepId) {
+        const step = document.getElementById(stepId);
+        const requiredFields = step.querySelectorAll('[required]');
+        let isValid = true;
+        
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                isValid = false;
+                field.classList.add('invalid');
+            } else {
+                field.classList.remove('invalid');
+            }
+        });
+        
+        const errorDiv = step.querySelector('.step-error');
+        if (!isValid) {
+            errorDiv.style.display = 'block';
+        } else {
+            errorDiv.style.display = 'none';
+        }
+        
+        return isValid;
     }
+
+    function nextStep(step) {
+        const currentStepId = document.querySelector('.form-step.active').id;
+        
+        if (validateStep(currentStepId)) {
+            document.querySelector('.form-step.active').classList.remove('active');
+            document.getElementById('step' + step).classList.add('active');
+            updateProgress(step);
+            window.scrollTo(0, 0);
+        }
+    }
+
     function prevStep(step) {
         document.querySelector('.form-step.active').classList.remove('active');
         document.getElementById('step' + step).classList.add('active');
         updateProgress(step);
+        window.scrollTo(0, 0);
     }
+
     function updateProgress(step) {
         document.querySelectorAll('.progress-step').forEach(el => el.classList.remove('active', 'completed'));
         for(let i=1; i<=3; i++) {
@@ -484,6 +542,15 @@
             else if(i === step) el.classList.add('active');
         }
     }
+
+    // Live validation feedback
+    document.querySelectorAll('input, select, textarea').forEach(input => {
+        input.addEventListener('input', function() {
+            if (this.value.trim()) {
+                this.classList.remove('invalid');
+            }
+        });
+    });
 </script>
 
 </body>
