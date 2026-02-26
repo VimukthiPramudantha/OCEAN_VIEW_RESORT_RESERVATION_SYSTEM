@@ -20,7 +20,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
-
 @WebServlet("/cancel-reservation")
 public class CancelReservationServlet extends HttpServlet {
 
@@ -69,25 +68,43 @@ public class CancelReservationServlet extends HttpServlet {
                 conn = DBUtil.getConnection();
                 conn.setAutoCommit(false);
 
-                // 1. Log cancellation FIRST (reservation still exists)
-                logCancellation(conn, reservationId, reason, cancelledBy);
+                // Fetch IDs for logging
+                Integer guestId = null;
+                Integer roomId = null;
 
-                // 2. Delete reservation (log row auto-deletes via CASCADE)
-                if (!reservationDAO.delete(reservationId, conn)) {
-                    throw new SQLException("Failed to delete reservation");
+                try (PreparedStatement psInfo = conn.prepareStatement(
+                        "SELECT guest_id, room_id FROM reservations WHERE reservation_id = ?")) {
+                    psInfo.setInt(1, reservationId);
+                    try (ResultSet rs = psInfo.executeQuery()) {
+                        if (rs.next()) {
+                            guestId = rs.getInt("guest_id");
+                            roomId = rs.getInt("room_id");
+                        } else {
+                            throw new SQLException("Reservation not found");
+                        }
+                    }
                 }
 
-                // 3. Free room (using previously fetched roomId or re-query if needed)
-                Integer roomId = reservationDAO.getRoomIdByReservationId(reservationId, conn);
+                // 1. Update status to cancelled
+                if (!reservationDAO.updateStatus(reservationId, "cancelled", conn)) {
+                    throw new SQLException("Failed to cancel reservation");
+                }
+
+                // 2. Free the room
                 if (roomId != null) {
                     if (!roomDAO.markAsAvailable(roomId, conn)) {
                         throw new SQLException("Failed to free room");
                     }
                 }
 
+                // 3. Log cancellation
+                if (guestId != null && roomId != null) {
+                    logCancellation(conn, reservationId, guestId, roomId, reason, cancelledBy);
+                }
+
                 conn.commit();
 
-                session.setAttribute("successMsg", "Reservation #" + reservationId + " cancelled and room freed.");
+                session.setAttribute("successMsg", "Reservation #" + reservationId + " cancelled successfully. Room is now available.");
                 resp.sendRedirect("view-reservations");
 
             } catch (SQLException e) {
@@ -104,32 +121,22 @@ public class CancelReservationServlet extends HttpServlet {
         }
     }
 
-    // logCancellation remains the same (fetches guest_id if needed)
-    private void logCancellation(Connection conn, int reservationId, String reason, String cancelledBy) throws SQLException {
-        Integer guestId = null;
-        try (PreparedStatement ps = conn.prepareStatement("SELECT guest_id FROM reservations WHERE reservation_id = ?")) {
-            ps.setInt(1, reservationId);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) guestId = rs.getInt("guest_id");
-            }
-        }
-
-        if (guestId == null) {
-            System.err.println("Warning: Skipping log - no guest_id for res " + reservationId);
-            return;
-        }
-
+    /**
+     * Log cancellation with all relevant fields
+     */
+    private void logCancellation(Connection conn, int reservationId, int guestId, int roomId, String reason, String cancelledBy) throws SQLException {
         String sql = """
             INSERT INTO cancellation_log 
-            (reservation_id, guest_id, cancelled_by, cancel_reason)
-            VALUES (?, ?, ?, ?)
+            (reservation_id, guest_id, room_id, cancelled_by, cancel_reason)
+            VALUES (?, ?, ?, ?, ?)
         """;
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, reservationId);
             ps.setInt(2, guestId);
-            ps.setString(3, cancelledBy);
-            ps.setString(4, reason);
+            ps.setInt(3, roomId);
+            ps.setString(4, cancelledBy);
+            ps.setString(5, reason);
             ps.executeUpdate();
         }
     }
@@ -141,12 +148,17 @@ public class CancelReservationServlet extends HttpServlet {
     }
 
     private void rollbackQuietly(Connection conn) {
-        if (conn != null) try { conn.rollback(); } catch (SQLException ignored) {}
+        if (conn != null) {
+            try { conn.rollback(); } catch (SQLException ignored) {}
+        }
     }
 
     private void resetAutoCommitAndClose(Connection conn) {
         if (conn != null) {
-            try { conn.setAutoCommit(true); conn.close(); } catch (SQLException ignored) {}
+            try {
+                conn.setAutoCommit(true);
+                conn.close();
+            } catch (SQLException ignored) {}
         }
     }
 }
