@@ -20,6 +20,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
+
 @WebServlet("/cancel-reservation")
 public class CancelReservationServlet extends HttpServlet {
 
@@ -68,23 +69,21 @@ public class CancelReservationServlet extends HttpServlet {
                 conn = DBUtil.getConnection();
                 conn.setAutoCommit(false);
 
-                // Step 1: Get reservation details BEFORE any change
-                ReservationDisplayDTO res = reservationDAO.findById(reservationId);
-                if (res == null) {
-                    throw new SQLException("Reservation not found");
-                }
+                // 1. Log cancellation FIRST (reservation still exists)
+                logCancellation(conn, reservationId, reason, cancelledBy);
 
-                if ("cancelled".equals(res.getStatus()) || "checked_out".equals(res.getStatus())) {
-                    throw new SQLException("Reservation is already cancelled or checked out");
-                }
-
-                // Step 2: Delete the reservation
+                // 2. Delete reservation (log row auto-deletes via CASCADE)
                 if (!reservationDAO.delete(reservationId, conn)) {
                     throw new SQLException("Failed to delete reservation");
                 }
 
-                // Step 3: Log cancellation with full details
-                logCancellation(conn, reservationId, res.getGuestId(), res.getRoomId(), reason, cancelledBy, res.getRatePerNight());
+                // 3. Free room (using previously fetched roomId or re-query if needed)
+                Integer roomId = reservationDAO.getRoomIdByReservationId(reservationId, conn);
+                if (roomId != null) {
+                    if (!roomDAO.markAsAvailable(roomId, conn)) {
+                        throw new SQLException("Failed to free room");
+                    }
+                }
 
                 conn.commit();
 
@@ -93,7 +92,7 @@ public class CancelReservationServlet extends HttpServlet {
 
             } catch (SQLException e) {
                 rollbackQuietly(conn);
-                req.setAttribute("error", "Failed to cancel reservation: " + e.getMessage());
+                req.setAttribute("error", "Failed to cancel: " + e.getMessage());
                 forwardToList(req, resp);
             } finally {
                 resetAutoCommitAndClose(conn);
@@ -105,20 +104,32 @@ public class CancelReservationServlet extends HttpServlet {
         }
     }
 
-    private void logCancellation(Connection conn, int resId, int guestId, int roomId, String reason, String cancelledBy, double totalAmount) throws SQLException {
+    // logCancellation remains the same (fetches guest_id if needed)
+    private void logCancellation(Connection conn, int reservationId, String reason, String cancelledBy) throws SQLException {
+        Integer guestId = null;
+        try (PreparedStatement ps = conn.prepareStatement("SELECT guest_id FROM reservations WHERE reservation_id = ?")) {
+            ps.setInt(1, reservationId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) guestId = rs.getInt("guest_id");
+            }
+        }
+
+        if (guestId == null) {
+            System.err.println("Warning: Skipping log - no guest_id for res " + reservationId);
+            return;
+        }
+
         String sql = """
             INSERT INTO cancellation_log 
-            (reservation_id, guest_id, room_id, cancelled_by, cancel_reason, total_amount)
-            VALUES (?, ?, ?, ?, ?, ?)
+            (reservation_id, guest_id, cancelled_by, cancel_reason)
+            VALUES (?, ?, ?, ?)
         """;
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, resId);
+            ps.setInt(1, reservationId);
             ps.setInt(2, guestId);
-            ps.setInt(3, roomId);
-            ps.setString(4, cancelledBy);
-            ps.setString(5, reason);
-            ps.setDouble(6, totalAmount);
+            ps.setString(3, cancelledBy);
+            ps.setString(4, reason);
             ps.executeUpdate();
         }
     }
