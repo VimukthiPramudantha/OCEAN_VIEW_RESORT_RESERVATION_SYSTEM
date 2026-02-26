@@ -113,6 +113,41 @@ public class ReservationDAO {
     }
 
     /**
+     * Find reservations within a date range (check_in or check_out overlaps)
+     */
+    public List<ReservationDisplayDTO> findByDateRange(Date start, Date end) {
+        List<ReservationDisplayDTO> list = new ArrayList<>();
+        String sql = """
+        SELECT r.*, g.name AS guest_name
+        FROM reservations r
+        JOIN guests g ON r.guest_id = g.guest_id
+        WHERE (r.check_in <= ? AND r.check_out >= ?) 
+           OR (r.check_in >= ? AND r.check_in <= ?)
+           OR (r.check_out >= ? AND r.check_out <= ?)
+        ORDER BY r.check_in DESC
+    """;
+
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setDate(1, end);
+            ps.setDate(2, start);
+            ps.setDate(3, start);
+            ps.setDate(4, end);
+            ps.setDate(5, start);
+            ps.setDate(6, end);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapToDisplayDTO(rs));
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Date range query failed: " + e.getMessage());
+        }
+        return list;
+    }
+    /**
      * Delete a reservation by ID and free up the associated room
      * Returns true if successful, false otherwise
      */
