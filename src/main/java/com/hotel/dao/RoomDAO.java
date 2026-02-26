@@ -119,6 +119,16 @@ public class RoomDAO {
         return null;  // No currently available room
     }
     /**
+     * Marks room as available (used in cancel/delete)
+     */
+    public boolean markAsAvailable(int roomId, Connection conn) throws SQLException {
+        String sql = "UPDATE rooms SET status = 'available' WHERE room_id = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, roomId);
+            return ps.executeUpdate() > 0;
+        }
+    }
+    /**
      * Marks the room as booked using provided connection (for transaction)
      * Returns true if updated successfully
      */

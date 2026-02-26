@@ -12,12 +12,9 @@ import java.util.List;
 public class ReservationDAO {
 
     // ------------------------------------------------------
-    // Summary / Dashboard queries
+    // Summary / Dashboard queries (non-transactional)
     // ------------------------------------------------------
 
-    /**
-     * Count reservations with check-in today and confirmed status
-     */
     public int countTodayCheckins() {
         String sql = """
             SELECT COUNT(*)
@@ -28,9 +25,6 @@ public class ReservationDAO {
         return executeCountQuery(sql);
     }
 
-    /**
-     * Count reservations with check-out today and checked-in status
-     */
     public int countTodayCheckouts() {
         String sql = """
             SELECT COUNT(*)
@@ -41,10 +35,6 @@ public class ReservationDAO {
         return executeCountQuery(sql);
     }
 
-    /**
-     * Sum total_amount for today's checked-out reservations
-     * Returns 0.00 if no matching rows (never null)
-     */
     public BigDecimal sumTodayRevenue() {
         String sql = """
             SELECT COALESCE(SUM(total_amount), 0.00)
@@ -67,12 +57,11 @@ public class ReservationDAO {
     }
 
     // ------------------------------------------------------
-    // CRUD Operations
+    // CRUD Operations (transaction-aware where needed)
     // ------------------------------------------------------
 
     /**
-     * Save new reservation (transaction managed by caller)
-     * Returns true if successful, false otherwise
+     * Save new reservation using provided connection (caller manages transaction)
      */
     public boolean save(Reservation res, Connection conn) throws SQLException {
         String sql = """
@@ -113,19 +102,117 @@ public class ReservationDAO {
     }
 
     /**
-     * Find reservations within a date range (check_in or check_out overlaps)
+     * Delete reservation and free room using provided connection
+     */
+    public boolean delete(int reservationId, Connection conn) throws SQLException {
+        String findRoomSql = "SELECT room_id FROM reservations WHERE reservation_id = ?";
+        String deleteSql   = "DELETE FROM reservations WHERE reservation_id = ?";
+        String freeRoomSql = "UPDATE rooms SET status = 'available' WHERE room_id = ?";
+
+        Integer roomId = null;
+
+        // Get room_id first
+        try (PreparedStatement psFind = conn.prepareStatement(findRoomSql)) {
+            psFind.setInt(1, reservationId);
+            try (ResultSet rs = psFind.executeQuery()) {
+                if (rs.next()) {
+                    roomId = rs.getInt("room_id");
+                } else {
+                    return false;
+                }
+            }
+        }
+
+        // Delete reservation
+        try (PreparedStatement psDelete = conn.prepareStatement(deleteSql)) {
+            psDelete.setInt(1, reservationId);
+            int rows = psDelete.executeUpdate();
+            if (rows == 0) return false;
+        }
+
+        // Free room if found
+        if (roomId != null) {
+            try (PreparedStatement psFree = conn.prepareStatement(freeRoomSql)) {
+                psFree.setInt(1, roomId);
+                psFree.executeUpdate();
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Update reservation status using provided connection
+     */
+    public boolean updateStatus(int reservationId, String newStatus, Connection conn) throws SQLException {
+        String sql = "UPDATE reservations SET status = ? WHERE reservation_id = ?";
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, newStatus);
+            ps.setInt(2, reservationId);
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    /**
+     * Get room_id for a reservation (used in cancel/delete)
+     */
+    public Integer getRoomIdByReservationId(int reservationId, Connection conn) throws SQLException {
+        String sql = "SELECT room_id FROM reservations WHERE reservation_id = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, reservationId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("room_id");
+                }
+            }
+        }
+        return null;
+    }
+
+    // ------------------------------------------------------
+    // Query / Display methods
+    // ------------------------------------------------------
+
+    /**
+     * Find all reservations with guest name for display
+     */
+    public List<ReservationDisplayDTO> findAll() {
+        List<ReservationDisplayDTO> list = new ArrayList<>();
+        String sql = """
+            SELECT r.*, g.name AS guest_name
+            FROM reservations r
+            JOIN guests g ON r.guest_id = g.guest_id
+            ORDER BY r.check_in DESC
+        """;
+
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                list.add(mapToDisplayDTO(rs));
+            }
+        } catch (SQLException e) {
+            System.err.println("Failed to fetch all reservations: " + e.getMessage());
+        }
+        return list;
+    }
+
+    /**
+     * Find reservations within a date range (overlapping check-in/out)
      */
     public List<ReservationDisplayDTO> findByDateRange(Date start, Date end) {
         List<ReservationDisplayDTO> list = new ArrayList<>();
         String sql = """
-        SELECT r.*, g.name AS guest_name
-        FROM reservations r
-        JOIN guests g ON r.guest_id = g.guest_id
-        WHERE (r.check_in <= ? AND r.check_out >= ?) 
-           OR (r.check_in >= ? AND r.check_in <= ?)
-           OR (r.check_out >= ? AND r.check_out <= ?)
-        ORDER BY r.check_in DESC
-    """;
+            SELECT r.*, g.name AS guest_name
+            FROM reservations r
+            JOIN guests g ON r.guest_id = g.guest_id
+            WHERE (r.check_in <= ? AND r.check_out >= ?) 
+               OR (r.check_in >= ? AND r.check_in <= ?)
+               OR (r.check_out >= ? AND r.check_out <= ?)
+            ORDER BY r.check_in DESC
+        """;
 
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -225,30 +312,6 @@ public class ReservationDAO {
     // Query / Display methods
     // ------------------------------------------------------
 
-    /**
-     * Find all reservations with guest name for display purposes
-     */
-    public List<ReservationDisplayDTO> findAll() {
-        List<ReservationDisplayDTO> list = new ArrayList<>();
-        String sql = """
-            SELECT r.*, g.name AS guest_name
-            FROM reservations r
-            JOIN guests g ON r.guest_id = g.guest_id
-            ORDER BY r.check_in DESC
-        """;
-
-        try (Connection conn = DBUtil.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-
-            while (rs.next()) {
-                list.add(mapToDisplayDTO(rs));
-            }
-        } catch (SQLException e) {
-            System.err.println("Failed to fetch all reservations: " + e.getMessage());
-        }
-        return list;
-    }
 
     /**
      * Find single reservation by ID with guest name
@@ -276,10 +339,6 @@ public class ReservationDAO {
         return null;
     }
 
-    // ------------------------------------------------------
-    // Helpers
-    // ------------------------------------------------------
-
     private ReservationDisplayDTO mapToDisplayDTO(ResultSet rs) throws SQLException {
         ReservationDisplayDTO dto = new ReservationDisplayDTO();
         dto.setId(rs.getInt("reservation_id"));
@@ -296,10 +355,12 @@ public class ReservationDAO {
         dto.setLuggageStorage(rs.getBoolean("luggage_storage"));
         dto.setLoyaltyNumber(rs.getString("loyalty_number"));
         dto.setRoomPreference(rs.getString("room_preference"));
-        // Add status if column exists
-        // dto.setStatus(rs.getString("status"));
         return dto;
     }
+
+    // ------------------------------------------------------
+    // Helpers
+    // ------------------------------------------------------
 
     private int executeCountQuery(String sql) {
         try (Connection conn = DBUtil.getConnection();
@@ -316,9 +377,7 @@ public class ReservationDAO {
 
     private void rollbackQuietly(Connection conn) {
         if (conn != null) {
-            try {
-                conn.rollback();
-            } catch (SQLException ignored) {}
+            try { conn.rollback(); } catch (SQLException ignored) {}
         }
     }
 
