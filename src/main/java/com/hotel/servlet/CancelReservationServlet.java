@@ -34,7 +34,7 @@ public class CancelReservationServlet extends HttpServlet {
             return;
         }
 
-        List<ReservationDisplayDTO> reservations = reservationDAO.findAll();
+        List<ReservationDisplayDTO> reservations = reservationDAO.findActiveForCancellation();
         req.setAttribute("reservations", reservations);
 
         req.getRequestDispatcher("/cancel-reservation.jsp").forward(req, resp);
@@ -104,8 +104,9 @@ public class CancelReservationServlet extends HttpServlet {
 
                 conn.commit();
 
-                session.setAttribute("successMsg", "Reservation #" + reservationId + " cancelled successfully. Room is now available.");
-                resp.sendRedirect("view-reservations");
+                session.setAttribute("successMsg",
+                        "Reservation #" + reservationId + " cancelled successfully. Room is now available.");
+                resp.sendRedirect("cancel-reservation");
 
             } catch (SQLException e) {
                 rollbackQuietly(conn);
@@ -124,12 +125,13 @@ public class CancelReservationServlet extends HttpServlet {
     /**
      * Log cancellation with all relevant fields
      */
-    private void logCancellation(Connection conn, int reservationId, int guestId, int roomId, String reason, String cancelledBy) throws SQLException {
+    private void logCancellation(Connection conn, int reservationId, int guestId, int roomId, String reason,
+            String cancelledBy) throws SQLException {
         String sql = """
-            INSERT INTO cancellation_log 
-            (reservation_id, guest_id, room_id, cancelled_by, cancel_reason)
-            VALUES (?, ?, ?, ?, ?)
-        """;
+                    INSERT INTO cancellation_log
+                    (reservation_id, guest_id, room_id, cancelled_by, cancel_reason)
+                    VALUES (?, ?, ?, ?, ?)
+                """;
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, reservationId);
@@ -142,14 +144,17 @@ public class CancelReservationServlet extends HttpServlet {
     }
 
     private void forwardToList(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        List<ReservationDisplayDTO> reservations = reservationDAO.findAll();
+        List<ReservationDisplayDTO> reservations = reservationDAO.findActiveForCancellation();
         req.setAttribute("reservations", reservations);
         req.getRequestDispatcher("/cancel-reservation.jsp").forward(req, resp);
     }
 
     private void rollbackQuietly(Connection conn) {
         if (conn != null) {
-            try { conn.rollback(); } catch (SQLException ignored) {}
+            try {
+                conn.rollback();
+            } catch (SQLException ignored) {
+            }
         }
     }
 
@@ -158,7 +163,8 @@ public class CancelReservationServlet extends HttpServlet {
             try {
                 conn.setAutoCommit(true);
                 conn.close();
-            } catch (SQLException ignored) {}
+            } catch (SQLException ignored) {
+            }
         }
     }
 }
