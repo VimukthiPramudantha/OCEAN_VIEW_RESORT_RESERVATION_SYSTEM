@@ -181,7 +181,7 @@ public class ReservationDAO {
     public List<ReservationDisplayDTO> findActiveForCancellation() {
         List<ReservationDisplayDTO> list = new ArrayList<>();
         String sql = """
-                    SELECT r.*, g.name AS guest_name
+                    SELECT r.*, g.name AS guest_name, g.adults, g.children
                     FROM reservations r
                     JOIN guests g ON r.guest_id = g.guest_id
                     WHERE r.status NOT IN ('cancelled', 'checked_out')
