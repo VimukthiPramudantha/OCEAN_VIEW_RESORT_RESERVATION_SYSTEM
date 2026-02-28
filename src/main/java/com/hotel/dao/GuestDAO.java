@@ -148,6 +148,37 @@ public class GuestDAO {
     }
 
     /**
+     * Find guest by ID
+     */
+    public Guest findById(int id) {
+        String sql = "SELECT * FROM guests WHERE guest_id = ?";
+
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Guest g = new Guest();
+                    g.setId(rs.getInt("guest_id"));
+                    g.setName(rs.getString("name"));
+                    g.setNicPassport(rs.getString("nic_passport"));
+                    g.setAdults(rs.getInt("adults"));
+                    g.setChildren(rs.getInt("children"));
+                    g.setInfants(rs.getInt("infants"));
+                    g.setNationality(rs.getString("nationality"));
+                    g.setContact(rs.getString("contact"));
+                    g.setEmail(rs.getString("email"));
+                    return g;
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Failed to find guest by ID " + id + ": " + e.getMessage());
+        }
+        return null;
+    }
+
+    /**
      * Returns ALL guests in the system, sorted by name
      */
     public List<Guest> findAll() {

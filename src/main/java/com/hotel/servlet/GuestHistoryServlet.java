@@ -28,10 +28,55 @@ public class GuestHistoryServlet extends HttpServlet {
             return;
         }
 
-        // Show all guests by default
+        String guestIdStr = req.getParameter("guestId");
+
+        // If guestId is provided → show detailed history for that guest
+        if (guestIdStr != null && !guestIdStr.trim().isEmpty()) {
+            try {
+                int guestId = Integer.parseInt(guestIdStr.trim());
+                Guest guest = guestDAO.findById(guestId);  // you need this method (see below)
+
+                if (guest == null) {
+                    req.setAttribute("error", "Guest not found.");
+                    showGuestList(req, resp);
+                    return;
+                }
+
+                // Load reservations and split into categories
+                List<ReservationDisplayDTO> allHistory = reservationDAO.findByGuestId(guestId);
+
+                List<ReservationDisplayDTO> current = allHistory.stream()
+                        .filter(r -> "confirmed".equals(r.getStatus()) || "checked_in".equals(r.getStatus()) || "pending".equals(r.getStatus()))
+                        .toList();
+
+                List<ReservationDisplayDTO> previous = allHistory.stream()
+                        .filter(r -> "checked_out".equals(r.getStatus()))
+                        .toList();
+
+                List<ReservationDisplayDTO> cancelled = allHistory.stream()
+                        .filter(r -> "cancelled".equals(r.getStatus()))
+                        .toList();
+
+                req.setAttribute("guest", guest);
+                req.setAttribute("currentReservations", current);
+                req.setAttribute("previousReservations", previous);
+                req.setAttribute("cancelledReservations", cancelled);
+
+                req.getRequestDispatcher("/guest-history.jsp").forward(req, resp);
+                return;
+
+            } catch (NumberFormatException e) {
+                req.setAttribute("error", "Invalid guest ID.");
+            }
+        }
+
+        // Default: show list of all guests
+        showGuestList(req, resp);
+    }
+
+    private void showGuestList(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         List<Guest> guests = guestDAO.findAll();
         req.setAttribute("guests", guests);
-
         req.getRequestDispatcher("/guest-history.jsp").forward(req, resp);
     }
 
@@ -45,58 +90,20 @@ public class GuestHistoryServlet extends HttpServlet {
 
         String searchTerm = req.getParameter("searchTerm");
         if (searchTerm == null || searchTerm.trim().isEmpty()) {
-            req.setAttribute("error", "Please enter NIC, Passport, Name or Contact.");
-            forwardToList(req, resp);
+            req.setAttribute("error", "Please enter search term.");
+            showGuestList(req, resp);
             return;
         }
 
-        searchTerm = searchTerm.trim();
-
-        // Search guests
-        List<Guest> guests = guestDAO.searchGuests(searchTerm);
+        List<Guest> guests = guestDAO.searchGuests(searchTerm.trim());
 
         if (guests.isEmpty()) {
-            req.setAttribute("error", "No guest found matching your search.");
-            forwardToList(req, resp);
-            return;
+            req.setAttribute("error", "No guests found matching your search.");
         }
 
-        if (guests.size() == 1) {
-            // If exactly one result, show details directly
-            showGuestDetails(req, resp, guests.get(0));
-        } else {
-            // Multiple results → show list
-            req.setAttribute("guests", guests);
-            req.setAttribute("searchTerm", searchTerm);
-            forwardToList(req, resp);
-        }
-    }
+        req.setAttribute("guests", guests);
+        req.setAttribute("searchTerm", searchTerm.trim());
 
-    private void showGuestDetails(HttpServletRequest req, HttpServletResponse resp, Guest guest) throws ServletException, IOException {
-        List<ReservationDisplayDTO> allHistory = reservationDAO.findByGuestId(guest.getId());
-
-        // Split into categories
-        List<ReservationDisplayDTO> current = allHistory.stream()
-                .filter(r -> "confirmed".equals(r.getStatus()) || "checked_in".equals(r.getStatus()) || "pending".equals(r.getStatus()))
-                .toList();
-
-        List<ReservationDisplayDTO> previous = allHistory.stream()
-                .filter(r -> "checked_out".equals(r.getStatus()))
-                .toList();
-
-        List<ReservationDisplayDTO> cancelled = allHistory.stream()
-                .filter(r -> "cancelled".equals(r.getStatus()))
-                .toList();
-
-        req.setAttribute("guest", guest);
-        req.setAttribute("currentReservations", current);
-        req.setAttribute("previousReservations", previous);
-        req.setAttribute("cancelledReservations", cancelled);
-
-        req.getRequestDispatcher("/guest-history.jsp").forward(req, resp);
-    }
-
-    private void forwardToList(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         req.getRequestDispatcher("/guest-history.jsp").forward(req, resp);
     }
 }
