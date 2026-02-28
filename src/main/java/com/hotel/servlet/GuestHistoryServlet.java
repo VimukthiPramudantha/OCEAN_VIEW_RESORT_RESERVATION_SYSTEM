@@ -34,7 +34,7 @@ public class GuestHistoryServlet extends HttpServlet {
         if (guestIdStr != null && !guestIdStr.trim().isEmpty()) {
             try {
                 int guestId = Integer.parseInt(guestIdStr.trim());
-                Guest guest = guestDAO.findById(guestId);  // you need this method (see below)
+                Guest guest = guestDAO.findById(guestId); // you need this method (see below)
 
                 if (guest == null) {
                     req.setAttribute("error", "Guest not found.");
@@ -42,19 +42,21 @@ public class GuestHistoryServlet extends HttpServlet {
                     return;
                 }
 
-                // Load reservations and split into categories
+                // Load reservations and split into categories (case-insensitive)
                 List<ReservationDisplayDTO> allHistory = reservationDAO.findByGuestId(guestId);
 
                 List<ReservationDisplayDTO> current = allHistory.stream()
-                        .filter(r -> "confirmed".equals(r.getStatus()) || "checked_in".equals(r.getStatus()) || "pending".equals(r.getStatus()))
+                        .filter(r -> "confirmed".equalsIgnoreCase(r.getStatus()) ||
+                                "checked_in".equalsIgnoreCase(r.getStatus()) ||
+                                "pending".equalsIgnoreCase(r.getStatus()))
                         .toList();
 
                 List<ReservationDisplayDTO> previous = allHistory.stream()
-                        .filter(r -> "checked_out".equals(r.getStatus()))
+                        .filter(r -> "checked_out".equalsIgnoreCase(r.getStatus()))
                         .toList();
 
                 List<ReservationDisplayDTO> cancelled = allHistory.stream()
-                        .filter(r -> "cancelled".equals(r.getStatus()))
+                        .filter(r -> "cancelled".equalsIgnoreCase(r.getStatus()))
                         .toList();
 
                 req.setAttribute("guest", guest);
