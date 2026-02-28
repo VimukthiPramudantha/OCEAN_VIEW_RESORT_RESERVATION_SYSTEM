@@ -29,7 +29,10 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: var(--bg-gradient);
+            background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), 
+                        url('images/upgraded-points-ROWs7kzqpGQ-unsplash.jpg');
+            background-size: cover;
+            background-position: center;
             background-attachment: fixed;
             color: var(--text-main);
         }
