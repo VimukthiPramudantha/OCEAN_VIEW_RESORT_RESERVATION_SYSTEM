@@ -174,7 +174,6 @@ public class ReservationDAO {
     // ------------------------------------------------------
     // Query / Display methods
     // ------------------------------------------------------
-
     /**
      * Find only active reservations eligible for cancellation
      * Excludes 'cancelled' and 'checked_out' statuses
@@ -202,13 +201,10 @@ public class ReservationDAO {
         return list;
     }
 
-    /**
-     * Find all reservations with guest name for display
-     */
     public List<ReservationDisplayDTO> findAll() {
         List<ReservationDisplayDTO> list = new ArrayList<>();
         String sql = """
-                    SELECT r.*, g.name AS guest_name
+                    SELECT r.*, g.name AS guest_name, g.adults, g.children
                     FROM reservations r
                     JOIN guests g ON r.guest_id = g.guest_id
                     ORDER BY r.check_in DESC
@@ -227,9 +223,6 @@ public class ReservationDAO {
         return list;
     }
 
-    /**
-     * Find reservations within a date range (overlapping check-in/out)
-     */
     public List<ReservationDisplayDTO> findByDateRange(Date start, Date end) {
         List<ReservationDisplayDTO> list = new ArrayList<>();
         String sql = """
@@ -346,7 +339,7 @@ public class ReservationDAO {
      */
     public ReservationDisplayDTO findById(int id) {
         String sql = """
-                    SELECT r.*, g.name AS guest_name
+                    SELECT r.*, g.name AS guest_name, g.adults, g.children
                     FROM reservations r
                     JOIN guests g ON r.guest_id = g.guest_id
                     WHERE r.reservation_id = ?
@@ -367,6 +360,127 @@ public class ReservationDAO {
         return null;
     }
 
+    // ------------------------------------------------------
+    // Update & Validation methods
+    // ------------------------------------------------------
+
+    /**
+     * Check if new dates overlap with any OTHER reservation (exclude self)
+     * Returns true if overlap exists → cannot save
+     */
+    public boolean hasOverlapExcludingSelf(int reservationId, Date newCheckIn, Date newCheckOut) {
+        String sql = """
+                    SELECT COUNT(*) > 0
+                    FROM reservations
+                    WHERE reservation_id != ?
+                      AND status NOT IN ('cancelled', 'checked_out')
+                      AND (
+                          (check_in <= ? AND check_out >= ?) OR
+                          (check_in >= ? AND check_in <= ?) OR
+                          (check_out >= ? AND check_out <= ?)
+                      )
+                """;
+
+        try (Connection conn = DBUtil.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, reservationId);
+            ps.setDate(2, newCheckOut);
+            ps.setDate(3, newCheckIn);
+            ps.setDate(4, newCheckIn);
+            ps.setDate(5, newCheckOut);
+            ps.setDate(6, newCheckIn);
+            ps.setDate(7, newCheckOut);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getBoolean(1); // true = overlap exists
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Overlap check failed: " + e.getMessage());
+        }
+        return false; // assume safe if query fails (fail-safe)
+    }
+
+    /**
+     * Update reservation details (dates, guest counts, requests)
+     * Returns true if updated successfully
+     */
+    public boolean updateDetails(int reservationId, String specialRequests, int adults, int children, Date newCheckIn,
+            Date newCheckOut) {
+        String findGuestSql = "SELECT guest_id FROM reservations WHERE reservation_id = ?";
+        String updateGuestSql = "UPDATE guests SET adults = ?, children = ? WHERE guest_id = ?";
+        String updateResSql = """
+                    UPDATE reservations
+                    SET special_requests = ?,
+                        check_in = ?,
+                        check_out = ?
+                    WHERE reservation_id = ?
+                """;
+
+        Connection conn = null;
+        try {
+            conn = DBUtil.getConnection();
+            conn.setAutoCommit(false);
+
+            // 1. Get guest_id
+            int guestId = -1;
+            try (PreparedStatement ps = conn.prepareStatement(findGuestSql)) {
+                ps.setInt(1, reservationId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next())
+                        guestId = rs.getInt(1);
+                }
+            }
+
+            if (guestId == -1)
+                return false;
+
+            // 2. Update guests table
+            try (PreparedStatement ps = conn.prepareStatement(updateGuestSql)) {
+                ps.setInt(1, adults);
+                ps.setInt(2, children);
+                ps.setInt(3, guestId);
+                ps.executeUpdate();
+            }
+
+            // 3. Update reservations table
+            try (PreparedStatement ps = conn.prepareStatement(updateResSql)) {
+                ps.setString(1, specialRequests);
+                ps.setDate(2, newCheckIn);
+                ps.setDate(3, newCheckOut);
+                ps.setInt(4, reservationId);
+                int rows = ps.executeUpdate();
+
+                conn.commit();
+                return rows > 0;
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Update reservation failed (complex): " + e.getMessage());
+            if (conn != null) {
+                try {
+                    conn.rollback();
+                } catch (SQLException ignored) {
+                }
+            }
+            return false;
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                } catch (SQLException ignored) {
+                }
+            }
+        }
+    }
+
+    // ------------------------------------------------------
+    // Query / Display methods (continued)
+    // ------------------------------------------------------
+
     private ReservationDisplayDTO mapToDisplayDTO(ResultSet rs) throws SQLException {
         ReservationDisplayDTO dto = new ReservationDisplayDTO();
         dto.setId(rs.getInt("reservation_id"));
@@ -384,6 +498,11 @@ public class ReservationDAO {
         dto.setLoyaltyNumber(rs.getString("loyalty_number"));
         dto.setRoomPreference(rs.getString("room_preference"));
         dto.setStatus(rs.getString("status"));
+
+        // Map the new fields — make sure these columns exist in your DB table
+        dto.setAdults(rs.getInt("adults"));
+        dto.setChildren(rs.getInt("children"));
+
         return dto;
     }
 

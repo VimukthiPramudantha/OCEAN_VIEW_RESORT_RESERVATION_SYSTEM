@@ -364,6 +364,15 @@
         </div>
     </div>
 
+    <%-- Success/Error Alerts --%>
+    <c:if test="${not empty sessionScope.successMsg}">
+        <div style="background: rgba(42, 157, 143, 0.1); color: var(--success); padding: 15px 25px; border-radius: 12px; margin-bottom: 25px; border-left: 5px solid var(--success); display: flex; align-items: center; gap: 15px;">
+            <i class="fas fa-check-circle"></i>
+            <span>${sessionScope.successMsg}</span>
+        </div>
+        <c:remove var="successMsg" scope="session" />
+    </c:if>
+
     <form class="filter-bar" method="get">
         <div class="filter-group">
             <label>Stay From</label>

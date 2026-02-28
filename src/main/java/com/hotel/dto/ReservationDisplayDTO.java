@@ -7,7 +7,7 @@ public class ReservationDisplayDTO {
     private Integer id;
     private String reservationNumber;
     private Integer guestId;
-    private String guestName;           // ← display-only field from JOIN
+    private String guestName;           // display-only from JOIN
     private Integer roomId;
     private String roomType;            // optional — if you join it
     private Date checkIn;
@@ -19,12 +19,18 @@ public class ReservationDisplayDTO {
     private Boolean luggageStorage;
     private String loyaltyNumber;
     private String roomPreference;
-    private String status;              // add if you have status in DB
+    private String status;              // if present in DB
+
+    // NEW fields needed for the update form
+    private Integer adults;
+    private Integer children;
+    private Integer infants;
 
     // Constructors
     public ReservationDisplayDTO() {}
 
-    // Getters & Setters (generate all - IDE can do this)
+    // Getters & Setters (all fields)
+
     public Integer getId() { return id; }
     public void setId(Integer id) { this.id = id; }
 
@@ -72,4 +78,12 @@ public class ReservationDisplayDTO {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    // NEW getters/setters for edit form fields
+    public Integer getAdults() { return adults; }
+    public void setAdults(Integer adults) { this.adults = adults; }
+
+    public Integer getChildren() { return children; }
+    public void setChildren(Integer children) { this.children = children; }
+
 }
