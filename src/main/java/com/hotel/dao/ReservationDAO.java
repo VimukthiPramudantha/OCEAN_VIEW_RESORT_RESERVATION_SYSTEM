@@ -223,6 +223,33 @@ public class ReservationDAO {
         return list;
     }
 
+    /**
+     * Find active reservations eligible for details update
+     * Excludes 'cancelled' and 'checked_out'
+     */
+    public List<ReservationDisplayDTO> findActiveForUpdate() {
+        List<ReservationDisplayDTO> list = new ArrayList<>();
+        String sql = """
+                    SELECT r.*, g.name AS guest_name, g.adults, g.children
+                    FROM reservations r
+                    JOIN guests g ON r.guest_id = g.guest_id
+                    WHERE r.status NOT IN ('cancelled', 'checked_out')
+                    ORDER BY r.check_in DESC
+                """;
+
+        try (Connection conn = DBUtil.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                list.add(mapToDisplayDTO(rs));
+            }
+        } catch (SQLException e) {
+            System.err.println("Failed to fetch active reservations for update: " + e.getMessage());
+        }
+        return list;
+    }
+
     public List<ReservationDisplayDTO> findByDateRange(Date start, Date end) {
         List<ReservationDisplayDTO> list = new ArrayList<>();
         String sql = """

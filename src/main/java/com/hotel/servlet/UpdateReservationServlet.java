@@ -48,7 +48,7 @@ public class UpdateReservationServlet extends HttpServlet {
         }
 
         // Default: show list of reservations to choose from
-        List<ReservationDisplayDTO> reservations = reservationDAO.findAll();
+        List<ReservationDisplayDTO> reservations = reservationDAO.findActiveForUpdate();
         req.setAttribute("reservations", reservations);
         req.getRequestDispatcher("/update-reservation-list.jsp").forward(req, resp);
     }
@@ -146,7 +146,7 @@ public class UpdateReservationServlet extends HttpServlet {
     }
 
     private void forwardToList(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        List<ReservationDisplayDTO> reservations = reservationDAO.findAll();
+        List<ReservationDisplayDTO> reservations = reservationDAO.findActiveForUpdate();
         req.setAttribute("reservations", reservations);
         req.getRequestDispatcher("/update-reservation-list.jsp").forward(req, resp);
     }
