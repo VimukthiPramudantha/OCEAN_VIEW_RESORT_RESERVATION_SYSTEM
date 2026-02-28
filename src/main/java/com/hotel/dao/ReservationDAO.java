@@ -431,6 +431,34 @@ public class ReservationDAO {
     }
 
     /**
+     * Find all reservations for a specific guest (including cancelled/past)
+     */
+    public List<ReservationDisplayDTO> findByGuestId(int guestId) {
+        List<ReservationDisplayDTO> list = new ArrayList<>();
+        String sql = """
+        SELECT r.*, g.name AS guest_name
+        FROM reservations r
+        JOIN guests g ON r.guest_id = g.guest_id
+        WHERE r.guest_id = ?
+        ORDER BY r.check_in DESC
+    """;
+
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, guestId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapToDisplayDTO(rs));
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Guest history query failed: " + e.getMessage());
+        }
+        return list;
+    }
+
+    /**
      * Update reservation details (dates, guest counts, requests)
      * Returns true if updated successfully
      */
