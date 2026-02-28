@@ -242,7 +242,7 @@
             </a>
         </li>
         <li class="nav-item">
-            <a href="manage-reservations" class="nav-link">
+            <a href="manage-reservations" class="nav-link active">
                 <i class="fas fa-calendar-check"></i> <span>Manage Bookings</span>
             </a>
         </li>
