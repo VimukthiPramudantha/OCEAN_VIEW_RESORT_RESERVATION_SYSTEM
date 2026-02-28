@@ -436,15 +436,15 @@ public class ReservationDAO {
     public List<ReservationDisplayDTO> findByGuestId(int guestId) {
         List<ReservationDisplayDTO> list = new ArrayList<>();
         String sql = """
-        SELECT r.*, g.name AS guest_name
-        FROM reservations r
-        JOIN guests g ON r.guest_id = g.guest_id
-        WHERE r.guest_id = ?
-        ORDER BY r.check_in DESC
-    """;
+                    SELECT r.*, g.name AS guest_name, g.adults, g.children
+                    FROM reservations r
+                    JOIN guests g ON r.guest_id = g.guest_id
+                    WHERE r.guest_id = ?
+                    ORDER BY r.check_in DESC
+                """;
 
         try (Connection conn = DBUtil.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, guestId);
             try (ResultSet rs = ps.executeQuery()) {
