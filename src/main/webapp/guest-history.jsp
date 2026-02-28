@@ -385,11 +385,11 @@
                 <i class="fas fa-search"></i> <span>Availability</span>
             </a>
         </li>
-        <li class="nav-item">
+        <!-- <li class="nav-item">
             <a href="reservation-history" class="nav-link active">
                 <i class="fas fa-history"></i> <span>Guest Registry</span>
             </a>
-        </li>
+        </li> -->
         <li class="nav-item">
             <a href="help" class="nav-link">
                 <i class="fas fa-question-circle"></i> <span>Portal Help</span>
