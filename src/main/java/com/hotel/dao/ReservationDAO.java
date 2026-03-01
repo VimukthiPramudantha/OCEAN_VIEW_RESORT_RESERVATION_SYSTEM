@@ -596,4 +596,132 @@ public class ReservationDAO {
             }
         }
     }
+    /**
+     * Find all reservations that are still active (not checked_out or cancelled)
+     */
+    public List<ReservationDisplayDTO> findAllActive() {
+        List<ReservationDisplayDTO> list = new ArrayList<>();
+        String sql = """
+        SELECT r.*, g.name AS guest_name
+        FROM reservations r
+        JOIN guests g ON r.guest_id = g.guest_id
+        WHERE r.status IN ('confirmed', 'checked_in', 'pending')
+        ORDER BY r.check_in DESC
+    """;
+
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                list.add(mapToDisplayDTO(rs));
+            }
+        } catch (SQLException e) {
+            System.err.println("Active reservations query failed: " + e.getMessage());
+        }
+        return list;
+    }
+
+    /**
+     * Find reservations by status
+     */
+    public List<ReservationDisplayDTO> findByStatus(String status) {
+        List<ReservationDisplayDTO> list = new ArrayList<>();
+        String sql = """
+        SELECT r.*, g.name AS guest_name
+        FROM reservations r
+        JOIN guests g ON r.guest_id = g.guest_id
+        WHERE r.status = ?
+        ORDER BY r.check_in DESC
+    """;
+
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, status);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapToDisplayDTO(rs));
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Status filter failed: " + e.getMessage());
+        }
+        return list;
+    }
+
+    /**
+     * Find a reservation by its unique reservation number (e.g. RES-2025-00123).
+     * Returns the full display DTO including guest name.
+     * Returns null if no matching reservation is found.
+     */
+    public ReservationDisplayDTO findByReservationNumber(String reservationNumber) {
+        if (reservationNumber == null || reservationNumber.trim().isEmpty()) {
+            return null;
+        }
+
+        String sql = """
+        SELECT r.*, g.name AS guest_name
+        FROM reservations r
+        JOIN guests g ON r.guest_id = g.guest_id
+        WHERE r.reservation_number = ?
+    """;
+
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, reservationNumber.trim());
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapToDisplayDTO(rs);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Failed to find reservation by number '" + reservationNumber + "': " + e.getMessage());
+            // Optional: e.printStackTrace(); if you want full stack trace in dev
+        }
+
+        return null;
+    }
+
+    /**
+     * Find all reservations for guests whose name contains the given search term (case-insensitive partial match).
+     * Returns a list of ReservationDisplayDTO objects (with guest name joined).
+     * Returns empty list if no matches or error.
+     */
+    public List<ReservationDisplayDTO> findByGuestName(String guestName) {
+        List<ReservationDisplayDTO> list = new ArrayList<>();
+
+        if (guestName == null || guestName.trim().isEmpty()) {
+            return list; // empty result for empty search
+        }
+
+        String searchPattern = "%" + guestName.trim().toLowerCase() + "%";
+
+        String sql = """
+        SELECT r.*, g.name AS guest_name
+        FROM reservations r
+        JOIN guests g ON r.guest_id = g.guest_id
+        WHERE LOWER(g.name) LIKE ?
+        ORDER BY r.check_in DESC
+    """;
+
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, searchPattern);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapToDisplayDTO(rs));
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Guest name search failed for '" + guestName + "': " + e.getMessage());
+            // Optional: e.printStackTrace(); during development
+        }
+
+        return list;
+    }
 }
