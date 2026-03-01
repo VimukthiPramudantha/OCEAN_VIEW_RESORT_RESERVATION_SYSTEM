@@ -21,40 +21,27 @@ import java.sql.SQLException;
 import java.util.List;
 
 @WebServlet("/cancel-reservation")
-public class CancelReservationServlet extends HttpServlet {
+public class CancelReservationServlet extends SecureServlet {
 
     private final ReservationDAO reservationDAO = new ReservationDAO();
     private final RoomDAO roomDAO = new RoomDAO();
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        HttpSession session = req.getSession(false);
-        if (session == null || session.getAttribute("user") == null) {
-            resp.sendRedirect("login");
-            return;
-        }
-
+    protected void doSecureGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         List<ReservationDisplayDTO> reservations = reservationDAO.findActiveForCancellation();
         req.setAttribute("reservations", reservations);
-
-        req.getRequestDispatcher("/cancel-reservation.jsp").forward(req, resp);
+        forward(req, resp, "/cancel-reservation.jsp");
     }
 
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        HttpSession session = req.getSession(false);
-        if (session == null || session.getAttribute("user") == null) {
-            resp.sendRedirect("login");
-            return;
-        }
-
-        User user = (User) session.getAttribute("user");
+    protected void doSecurePost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        User user = getAuthenticatedUser(req);
         String cancelledBy = user.getUsername();
 
         String resIdStr = req.getParameter("reservationId");
-        String reason = req.getParameter("cancelReason");
+        String reason = trimOrNull(req.getParameter("cancelReason"));
 
-        if (resIdStr == null || reason == null || reason.trim().isEmpty()) {
+        if (isBlank(resIdStr) || isBlank(reason)) {
             req.setAttribute("error", "Reservation ID and cancellation reason are required.");
             forwardToList(req, resp);
             return;
@@ -104,16 +91,27 @@ public class CancelReservationServlet extends HttpServlet {
 
                 conn.commit();
 
-                session.setAttribute("successMsg",
+                req.getSession().setAttribute("successMsg",
                         "Reservation #" + reservationId + " cancelled successfully. Room is now available.");
-                resp.sendRedirect("cancel-reservation");
+                redirect(resp, "cancel-reservation");
 
             } catch (SQLException e) {
-                rollbackQuietly(conn);
+                if (conn != null) {
+                    try {
+                        conn.rollback();
+                    } catch (SQLException ignored) {
+                    }
+                }
                 req.setAttribute("error", "Failed to cancel: " + e.getMessage());
                 forwardToList(req, resp);
             } finally {
-                resetAutoCommitAndClose(conn);
+                if (conn != null) {
+                    try {
+                        conn.setAutoCommit(true);
+                        conn.close();
+                    } catch (SQLException ignored) {
+                    }
+                }
             }
 
         } catch (NumberFormatException e) {
@@ -146,25 +144,6 @@ public class CancelReservationServlet extends HttpServlet {
     private void forwardToList(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         List<ReservationDisplayDTO> reservations = reservationDAO.findActiveForCancellation();
         req.setAttribute("reservations", reservations);
-        req.getRequestDispatcher("/cancel-reservation.jsp").forward(req, resp);
-    }
-
-    private void rollbackQuietly(Connection conn) {
-        if (conn != null) {
-            try {
-                conn.rollback();
-            } catch (SQLException ignored) {
-            }
-        }
-    }
-
-    private void resetAutoCommitAndClose(Connection conn) {
-        if (conn != null) {
-            try {
-                conn.setAutoCommit(true);
-                conn.close();
-            } catch (SQLException ignored) {
-            }
-        }
+        forward(req, resp, "/cancel-reservation.jsp");
     }
 }

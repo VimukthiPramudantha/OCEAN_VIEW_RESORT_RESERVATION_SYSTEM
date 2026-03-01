@@ -15,23 +15,17 @@ import java.io.IOException;
 import java.util.List;
 
 @WebServlet("/reservation-history")
-public class GuestHistoryServlet extends HttpServlet {
+public class GuestHistoryServlet extends SecureServlet {
 
     private final GuestDAO guestDAO = new GuestDAO();
     private final ReservationDAO reservationDAO = new ReservationDAO();
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        HttpSession session = req.getSession(false);
-        if (session == null || session.getAttribute("user") == null) {
-            resp.sendRedirect("login");
-            return;
-        }
-
+    protected void doSecureGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String guestIdStr = req.getParameter("guestId");
 
         // If guestId is provided → show detailed history for that guest
-        if (guestIdStr != null && !guestIdStr.trim().isEmpty()) {
+        if (!isBlank(guestIdStr)) {
             try {
                 int guestId = Integer.parseInt(guestIdStr.trim());
                 Guest guest = guestDAO.findById(guestId); // you need this method (see below)
@@ -64,7 +58,7 @@ public class GuestHistoryServlet extends HttpServlet {
                 req.setAttribute("previousReservations", previous);
                 req.setAttribute("cancelledReservations", cancelled);
 
-                req.getRequestDispatcher("/guest-history.jsp").forward(req, resp);
+                forward(req, resp, "/guest-history.jsp");
                 return;
 
             } catch (NumberFormatException e) {
@@ -79,19 +73,13 @@ public class GuestHistoryServlet extends HttpServlet {
     private void showGuestList(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         List<Guest> guests = guestDAO.findAll();
         req.setAttribute("guests", guests);
-        req.getRequestDispatcher("/guest-history.jsp").forward(req, resp);
+        forward(req, resp, "/guest-history.jsp");
     }
 
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        HttpSession session = req.getSession(false);
-        if (session == null || session.getAttribute("user") == null) {
-            resp.sendRedirect("login");
-            return;
-        }
-
+    protected void doSecurePost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String searchTerm = req.getParameter("searchTerm");
-        if (searchTerm == null || searchTerm.trim().isEmpty()) {
+        if (isBlank(searchTerm)) {
             req.setAttribute("error", "Please enter search term.");
             showGuestList(req, resp);
             return;
@@ -106,6 +94,6 @@ public class GuestHistoryServlet extends HttpServlet {
         req.setAttribute("guests", guests);
         req.setAttribute("searchTerm", searchTerm.trim());
 
-        req.getRequestDispatcher("/guest-history.jsp").forward(req, resp);
+        forward(req, resp, "/guest-history.jsp");
     }
 }

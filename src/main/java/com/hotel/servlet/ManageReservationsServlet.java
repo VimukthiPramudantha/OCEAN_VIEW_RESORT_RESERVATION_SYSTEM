@@ -7,18 +7,14 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import com.hotel.servlet.SecureServlet;
 
 import java.io.IOException;
 
 @WebServlet("/manage-reservations")
-public class ManageReservationsServlet extends HttpServlet {
+public class ManageReservationsServlet extends SecureServlet {
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        HttpSession session = req.getSession(false);
-        if (session == null || session.getAttribute("user") == null) {
-            resp.sendRedirect("login");
-            return;
-        }
-        req.getRequestDispatcher("/manage-reservations.jsp").forward(req, resp);
+    protected void doSecureGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        forward(req, resp, "/manage-reservations.jsp");
     }
 }
