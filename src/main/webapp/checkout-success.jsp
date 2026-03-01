@@ -206,7 +206,7 @@
             <div class="invoice-meta">
                 <h4>Invoice</h4>
                 <p>RES# ${reservation.reservationNumber}</p>
-                <p style="font-weight: 400; font-size: 11px; color:#999;">DATE: ${LocalDate.now()}</p>
+                <p style="font-weight: 400; font-size: 11px; color:#999;">DATE: <%= java.time.LocalDate.now() %></p>
             </div>
         </div>
 
@@ -238,23 +238,37 @@
                     <td>Accommodation - Deluxe Ocean View Room</td>
                     <td style="text-align: center;">${nights}</td>
                     <td style="text-align: right;">LKR ${reservation.ratePerNight}</td>
-                    <td style="text-align: right;">LKR ${totalBill}</td>
+                    <td style="text-align: right;">LKR ${reservation.ratePerNight * nights}</td>
+                </tr>
+                <tr>
+                    <td>Service Charge</td>
+                    <td style="text-align: center;">-</td>
+                    <td style="text-align: right;">-</td>
+                    <td style="text-align: right;">LKR ${serviceCharge != null ? serviceCharge : '0.00'}</td>
+                </tr>
+                <tr>
+                    <td>Tax Information</td>
+                    <td style="text-align: center;">-</td>
+                    <td style="text-align: right;">-</td>
+                    <td style="text-align: right;">LKR ${tax != null ? tax : '0.00'}</td>
+                </tr>
+                <tr>
+                    <td>Additional Charges</td>
+                    <td style="text-align: center;">-</td>
+                    <td style="text-align: right;">-</td>
+                    <td style="text-align: right;">LKR ${additionalCharges != null ? additionalCharges : '0.00'}</td>
                 </tr>
             </tbody>
         </table>
 
         <div class="total-section">
             <div class="line">
-                <span>Subtotal</span>
-                <span class="val">LKR ${totalBill}</span>
+                <span>Subtotal (Room)</span>
+                <span class="val">LKR ${reservation.ratePerNight * nights}</span>
             </div>
             <div class="line">
-                <span>Service Charge (0%)</span>
-                <span class="val">LKR 0.00</span>
-            </div>
-            <div class="line">
-                <span>Tax (0%)</span>
-                <span class="val">LKR 0.00</span>
+                <span>Total Adjustments</span>
+                <span class="val">LKR ${serviceCharge + tax + additionalCharges}</span>
             </div>
             <div class="grand-total">
                 <span>Total Amount</span>

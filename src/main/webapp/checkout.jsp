@@ -366,36 +366,69 @@
             </div>
         </div>
 
-        <table class="bill-table">
-            <thead>
-                <tr>
-                    <th>Description</th>
-                    <th>Rate/Duration</th>
-                    <th style="text-align: right;">Subtotal</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>Ocean View Resort Accommodation</td>
-                    <td>LKR ${reservation.ratePerNight} x ${nights} Nights</td>
-                    <td style="text-align: right;">LKR ${totalBill}</td>
-                </tr>
-                <tr class="total-row">
-                    <td colspan="2" style="text-align: right;">Grand Total (LKR):</td>
-                    <td style="text-align: right;">LKR ${totalBill}</td>
-                </tr>
-            </tbody>
-        </table>
-
-        <form method="post" action="checkout" class="action-btns">
+        <form method="post" action="checkout">
             <input type="hidden" name="reservationId" value="${reservation.id}">
-            <a href="reservation-search" class="btn btn-back">Return to Search</a>
-            <button type="submit" class="btn btn-confirm">
-                <i class="fas fa-check-circle"></i> Complete Checkout
-            </button>
+            <input type="hidden" id="finalTotalInput" name="totalAmount" value="${totalBill}">
+            
+            <table class="bill-table">
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th>Rate/Duration</th>
+                        <th style="text-align: right;">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Ocean View Resort Accommodation</td>
+                        <td>LKR ${reservation.ratePerNight} x ${nights} Nights</td>
+                        <td style="text-align: right;">LKR ${totalBill}</td>
+                    </tr>
+                    <tr>
+                        <td>Service Charge</td>
+                        <td><input type="number" id="serviceCharge" name="serviceCharge" step="0.01" value="0.00" oninput="calculateTotal()" style="padding: 5px; border-radius: 4px; border: 1px solid #ddd; width: 100px;"></td>
+                        <td style="text-align: right;">-</td>
+                    </tr>
+                    <tr>
+                        <td>Tax Information</td>
+                        <td><input type="number" id="tax" name="tax" step="0.01" value="0.00" oninput="calculateTotal()" style="padding: 5px; border-radius: 4px; border: 1px solid #ddd; width: 100px;"></td>
+                        <td style="text-align: right;">-</td>
+                    </tr>
+                    <tr>
+                        <td>Additional Charges</td>
+                        <td><input type="number" id="additionalCharges" name="additionalCharges" step="0.01" value="0.00" oninput="calculateTotal()" style="padding: 5px; border-radius: 4px; border: 1px solid #ddd; width: 100px;"></td>
+                        <td style="text-align: right;">-</td>
+                    </tr>
+                    <tr class="total-row">
+                        <td colspan="2" style="text-align: right;">Grand Total (LKR):</td>
+                        <td style="text-align: right;" id="grandTotalDisplay">LKR ${totalBill}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="action-btns">
+                <a href="reservation-search" class="btn btn-back">Return to Search</a>
+                <button type="submit" class="btn btn-confirm">
+                    <i class="fas fa-check-circle"></i> Complete Checkout
+                </button>
+            </div>
         </form>
     </div>
 </main>
+
+<script>
+    function calculateTotal() {
+        const baseTotal = parseFloat('${totalBill}');
+        const serviceCharge = parseFloat(document.getElementById('serviceCharge').value) || 0;
+        const tax = parseFloat(document.getElementById('tax').value) || 0;
+        const additional = parseFloat(document.getElementById('additionalCharges').value) || 0;
+        
+        const grandTotal = baseTotal + serviceCharge + tax + additional;
+        
+        document.getElementById('grandTotalDisplay').innerText = 'LKR ' + grandTotal.toFixed(2);
+        document.getElementById('finalTotalInput').value = grandTotal;
+    }
+</script>
 
 </body>
 </html>

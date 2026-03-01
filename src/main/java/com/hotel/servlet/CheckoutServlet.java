@@ -87,19 +87,40 @@ public class CheckoutServlet extends HttpServlet {
             // 1. Update reservation status to 'checked_out'
             String updateStatusSql = "UPDATE reservations SET status = 'checked_out' WHERE reservation_id = ?";
 
-            // Re-calculate for display on success page
+            // Capture billing adjustments
+            double serviceCharge = req.getParameter("serviceCharge") != null
+                    ? Double.parseDouble(req.getParameter("serviceCharge"))
+                    : 0.0;
+            double tax = req.getParameter("tax") != null ? Double.parseDouble(req.getParameter("tax")) : 0.0;
+            double additionalCharges = req.getParameter("additionalCharges") != null
+                    ? Double.parseDouble(req.getParameter("additionalCharges"))
+                    : 0.0;
+            double totalAmount = req.getParameter("totalAmount") != null
+                    ? Double.parseDouble(req.getParameter("totalAmount"))
+                    : 0.0;
+
+            // Re-calculate nights for display
             long nights = ChronoUnit.DAYS.between(reservation.getCheckIn().toLocalDate(),
                     reservation.getCheckOut().toLocalDate());
             if (nights <= 0)
                 nights = 1;
-            double totalBill = nights * reservation.getRatePerNight();
 
             try (PreparedStatement psStatus = conn.prepareStatement(updateStatusSql)) {
                 psStatus.setInt(1, reservationId);
                 psStatus.executeUpdate();
             }
 
-            // 2. Free the room
+            // 2. Save detailed checkout record
+            com.hotel.model.Checkout checkoutRecord = new com.hotel.model.Checkout();
+            checkoutRecord.setReservationId(reservationId);
+            checkoutRecord.setServiceCharge(serviceCharge);
+            checkoutRecord.setTax(tax);
+            checkoutRecord.setAdditionalCharges(additionalCharges);
+            checkoutRecord.setTotalAmount(totalAmount);
+
+            new com.hotel.dao.CheckoutDAO().save(checkoutRecord, conn);
+
+            // 3. Free the room
             String updateRoomSql = "UPDATE rooms SET status = 'available' WHERE room_id = ?";
             try (PreparedStatement psRoom = conn.prepareStatement(updateRoomSql)) {
                 psRoom.setInt(1, reservation.getRoomId());
@@ -111,7 +132,10 @@ public class CheckoutServlet extends HttpServlet {
             // Set attributes for success page
             req.setAttribute("reservation", reservation);
             req.setAttribute("nights", nights);
-            req.setAttribute("totalBill", totalBill);
+            req.setAttribute("totalBill", totalAmount); // Use the final total amount
+            req.setAttribute("serviceCharge", serviceCharge);
+            req.setAttribute("tax", tax);
+            req.setAttribute("additionalCharges", additionalCharges);
 
             req.getRequestDispatcher("/checkout-success.jsp").forward(req, resp);
 
