@@ -297,6 +297,11 @@
             </a>
         </li>
         <li class="nav-item">
+            <a href="reservation-search" class="nav-link">
+                <i class="fas fa-search-location"></i> <span>Search Reservations</span>
+            </a>
+        </li>
+        <li class="nav-item">
             <a href="help" class="nav-link">
                 <i class="fas fa-question-circle"></i> <span>Portal Help</span>
             </a>
@@ -361,6 +366,12 @@
             <h3>Manage Reservations</h3>
             <p>View, update, cancel, delete, or see history of bookings.</p>
             <a href="manage-reservations" class="btn-action">Manage Reservations</a>
+        </div>
+
+        <div class="action-card">
+            <h3>Search Reservations</h3>
+            <p>Quickly search for specific reservations and handle checkouts.</p>
+            <a href="reservation-search" class="btn-action">Search Now</a>
         </div>
 
         <div class="action-card">

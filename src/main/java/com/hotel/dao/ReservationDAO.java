@@ -12,6 +12,42 @@ import java.util.List;
 public class ReservationDAO {
 
     // ------------------------------------------------------
+    // Constants & Shared Query Logic
+    // ------------------------------------------------------
+
+    private static final String BASE_RESERVATION_SELECT = """
+                SELECT r.*, g.name AS guest_name, g.adults, g.children
+                FROM reservations r
+                JOIN guests g ON r.guest_id = g.guest_id
+            """;
+
+    private List<ReservationDisplayDTO> fetchReservations(String sql, Object... params) {
+        List<ReservationDisplayDTO> list = new ArrayList<>();
+        try (Connection conn = DBUtil.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            for (int i = 0; i < params.length; i++) {
+                ps.setObject(i + 1, params[i]);
+            }
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapToDisplayDTO(rs));
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Database query failed: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    private ReservationDisplayDTO fetchSingleReservation(String sql, Object... params) {
+        List<ReservationDisplayDTO> results = fetchReservations(sql, params);
+        return results.isEmpty() ? null : results.get(0);
+    }
+
+    // ------------------------------------------------------
     // Summary / Dashboard queries (non-transactional)
     // ------------------------------------------------------
 
@@ -126,19 +162,18 @@ public class ReservationDAO {
         // Delete reservation
         try (PreparedStatement psDelete = conn.prepareStatement(deleteSql)) {
             psDelete.setInt(1, reservationId);
-            int rows = psDelete.executeUpdate();
-            if (rows == 0)
+            int rowsRemoved = psDelete.executeUpdate();
+            if (rowsRemoved == 0)
                 return false;
         }
 
-        // Free room if found
+        // Free room
         if (roomId != null) {
             try (PreparedStatement psFree = conn.prepareStatement(freeRoomSql)) {
                 psFree.setInt(1, roomId);
                 psFree.executeUpdate();
             }
         }
-
         return true;
     }
 
@@ -174,165 +209,54 @@ public class ReservationDAO {
     // ------------------------------------------------------
     // Query / Display methods
     // ------------------------------------------------------
+
     /**
      * Find only active reservations eligible for cancellation
-     * Excludes 'cancelled' and 'checked_out' statuses
      */
     public List<ReservationDisplayDTO> findActiveForCancellation() {
-        List<ReservationDisplayDTO> list = new ArrayList<>();
-        String sql = """
-                    SELECT r.*, g.name AS guest_name, g.adults, g.children
-                    FROM reservations r
-                    JOIN guests g ON r.guest_id = g.guest_id
-                    WHERE r.status NOT IN ('cancelled', 'checked_out')
-                    ORDER BY r.check_in ASC
-                """;
-
-        try (Connection conn = DBUtil.getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql);
-                ResultSet rs = ps.executeQuery()) {
-
-            while (rs.next()) {
-                list.add(mapToDisplayDTO(rs));
-            }
-        } catch (SQLException e) {
-            System.err.println("Active reservations query failed: " + e.getMessage());
-        }
-        return list;
+        String sql = BASE_RESERVATION_SELECT
+                + " WHERE r.status NOT IN ('cancelled', 'checked_out') ORDER BY r.check_in ASC";
+        return fetchReservations(sql);
     }
 
     public List<ReservationDisplayDTO> findAll() {
-        List<ReservationDisplayDTO> list = new ArrayList<>();
-        String sql = """
-                    SELECT r.*, g.name AS guest_name, g.adults, g.children
-                    FROM reservations r
-                    JOIN guests g ON r.guest_id = g.guest_id
-                    ORDER BY r.check_in DESC
-                """;
-
-        try (Connection conn = DBUtil.getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql);
-                ResultSet rs = ps.executeQuery()) {
-
-            while (rs.next()) {
-                list.add(mapToDisplayDTO(rs));
-            }
-        } catch (SQLException e) {
-            System.err.println("Failed to fetch all reservations: " + e.getMessage());
-        }
-        return list;
+        String sql = BASE_RESERVATION_SELECT + " ORDER BY r.check_in DESC";
+        return fetchReservations(sql);
     }
 
     /**
      * Find active reservations eligible for details update
-     * Excludes 'cancelled' and 'checked_out'
      */
     public List<ReservationDisplayDTO> findActiveForUpdate() {
-        List<ReservationDisplayDTO> list = new ArrayList<>();
-        String sql = """
-                    SELECT r.*, g.name AS guest_name, g.adults, g.children
-                    FROM reservations r
-                    JOIN guests g ON r.guest_id = g.guest_id
-                    WHERE r.status NOT IN ('cancelled', 'checked_out')
-                    ORDER BY r.check_in DESC
-                """;
-
-        try (Connection conn = DBUtil.getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql);
-                ResultSet rs = ps.executeQuery()) {
-
-            while (rs.next()) {
-                list.add(mapToDisplayDTO(rs));
-            }
-        } catch (SQLException e) {
-            System.err.println("Failed to fetch active reservations for update: " + e.getMessage());
-        }
-        return list;
+        String sql = BASE_RESERVATION_SELECT
+                + " WHERE r.status NOT IN ('cancelled', 'checked_out') ORDER BY r.check_in DESC";
+        return fetchReservations(sql);
     }
 
     public List<ReservationDisplayDTO> findByDateRange(Date start, Date end) {
-        List<ReservationDisplayDTO> list = new ArrayList<>();
-        String sql = """
-                    SELECT r.*, g.name AS guest_name
-                    FROM reservations r
-                    JOIN guests g ON r.guest_id = g.guest_id
-                    WHERE (r.check_in <= ? AND r.check_out >= ?)
-                       OR (r.check_in >= ? AND r.check_in <= ?)
-                       OR (r.check_out >= ? AND r.check_out <= ?)
-                    ORDER BY r.check_in DESC
+        String sql = BASE_RESERVATION_SELECT + """
+                     WHERE (r.check_in <= ? AND r.check_out >= ?)
+                        OR (r.check_in >= ? AND r.check_in <= ?)
+                        OR (r.check_out >= ? AND r.check_out <= ?)
+                     ORDER BY r.check_in DESC
                 """;
-
-        try (Connection conn = DBUtil.getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setDate(1, end);
-            ps.setDate(2, start);
-            ps.setDate(3, start);
-            ps.setDate(4, end);
-            ps.setDate(5, start);
-            ps.setDate(6, end);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    list.add(mapToDisplayDTO(rs));
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("Date range query failed: " + e.getMessage());
-        }
-        return list;
+        return fetchReservations(sql, end, start, start, end, start, end);
     }
 
     /**
      * Delete a reservation by ID and free up the associated room
-     * Returns true if successful, false otherwise
      */
     public boolean delete(int reservationId) {
-        String findRoomSql = "SELECT room_id FROM reservations WHERE reservation_id = ?";
-        String deleteResSql = "DELETE FROM reservations WHERE reservation_id = ?";
-        String freeRoomSql = "UPDATE rooms SET status = 'available' WHERE room_id = ?";
-
         Connection conn = null;
         try {
             conn = DBUtil.getConnection();
             conn.setAutoCommit(false);
-
-            // Step 1: Get the room_id BEFORE deleting
-            Integer roomId = null;
-            try (PreparedStatement psFind = conn.prepareStatement(findRoomSql)) {
-                psFind.setInt(1, reservationId);
-                try (ResultSet rs = psFind.executeQuery()) {
-                    if (rs.next()) {
-                        roomId = rs.getInt("room_id");
-                    } else {
-                        return false; // reservation doesn't exist
-                    }
-                }
-            }
-
-            // Step 2: Delete the reservation
-            try (PreparedStatement psDelete = conn.prepareStatement(deleteResSql)) {
-                psDelete.setInt(1, reservationId);
-                int rowsDeleted = psDelete.executeUpdate();
-                if (rowsDeleted == 0) {
-                    return false;
-                }
-            }
-
-            // Step 3: Free the room (only if we found a room_id)
-            if (roomId != null) {
-                try (PreparedStatement psFree = conn.prepareStatement(freeRoomSql)) {
-                    psFree.setInt(1, roomId);
-                    psFree.executeUpdate(); // no need to check rows — room might already be free
-                }
-            }
-
-            conn.commit();
-            return true;
-
+            boolean success = delete(reservationId, conn);
+            if (success)
+                conn.commit();
+            return success;
         } catch (SQLException e) {
             System.err.println("Delete + free room failed: " + e.getMessage());
-            e.printStackTrace();
             rollbackQuietly(conn);
             return false;
         } finally {
@@ -344,57 +268,22 @@ public class ReservationDAO {
      * Update reservation status (e.g. 'cancelled', 'checked_in')
      */
     public boolean updateStatus(int reservationId, String newStatus) {
-        String sql = "UPDATE reservations SET status = ? WHERE reservation_id = ?";
-
-        try (Connection conn = DBUtil.getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, newStatus);
-            ps.setInt(2, reservationId);
-            return ps.executeUpdate() > 0;
+        try (Connection conn = DBUtil.getConnection()) {
+            return updateStatus(reservationId, newStatus, conn);
         } catch (SQLException e) {
             System.err.println("Status update failed: " + e.getMessage());
             return false;
         }
     }
 
-    // ------------------------------------------------------
-    // Query / Display methods
-    // ------------------------------------------------------
-
     /**
-     * Find single reservation by ID with guest name
+     * Find single reservation by ID
      */
     public ReservationDisplayDTO findById(int id) {
-        String sql = """
-                    SELECT r.*, g.name AS guest_name, g.adults, g.children
-                    FROM reservations r
-                    JOIN guests g ON r.guest_id = g.guest_id
-                    WHERE r.reservation_id = ?
-                """;
-
-        try (Connection conn = DBUtil.getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setInt(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return mapToDisplayDTO(rs);
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("Failed to fetch reservation ID " + id + ": " + e.getMessage());
-        }
-        return null;
+        String sql = BASE_RESERVATION_SELECT + " WHERE r.reservation_id = ?";
+        return fetchSingleReservation(sql, id);
     }
 
-    // ------------------------------------------------------
-    // Update & Validation methods
-    // ------------------------------------------------------
-
-    /**
-     * Check if new dates overlap with any OTHER reservation (exclude self)
-     * Returns true if overlap exists → cannot save
-     */
     public boolean hasOverlapExcludingSelf(int reservationId, Date newCheckIn, Date newCheckOut) {
         String sql = """
                     SELECT COUNT(*) > 0
@@ -421,47 +310,20 @@ public class ReservationDAO {
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    return rs.getBoolean(1); // true = overlap exists
+                    return rs.getBoolean(1);
                 }
             }
         } catch (SQLException e) {
             System.err.println("Overlap check failed: " + e.getMessage());
         }
-        return false; // assume safe if query fails (fail-safe)
+        return false;
     }
 
-    /**
-     * Find all reservations for a specific guest (including cancelled/past)
-     */
     public List<ReservationDisplayDTO> findByGuestId(int guestId) {
-        List<ReservationDisplayDTO> list = new ArrayList<>();
-        String sql = """
-                    SELECT r.*, g.name AS guest_name, g.adults, g.children
-                    FROM reservations r
-                    JOIN guests g ON r.guest_id = g.guest_id
-                    WHERE r.guest_id = ?
-                    ORDER BY r.check_in DESC
-                """;
-
-        try (Connection conn = DBUtil.getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setInt(1, guestId);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    list.add(mapToDisplayDTO(rs));
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("Guest history query failed: " + e.getMessage());
-        }
-        return list;
+        String sql = BASE_RESERVATION_SELECT + " WHERE r.guest_id = ? ORDER BY r.check_in DESC";
+        return fetchReservations(sql, guestId);
     }
 
-    /**
-     * Update reservation details (dates, guest counts, requests)
-     * Returns true if updated successfully
-     */
     public boolean updateDetails(int reservationId, String specialRequests, int adults, int children, Date newCheckIn,
             Date newCheckOut) {
         String findGuestSql = "SELECT guest_id FROM reservations WHERE reservation_id = ?";
@@ -479,7 +341,6 @@ public class ReservationDAO {
             conn = DBUtil.getConnection();
             conn.setAutoCommit(false);
 
-            // 1. Get guest_id
             int guestId = -1;
             try (PreparedStatement ps = conn.prepareStatement(findGuestSql)) {
                 ps.setInt(1, reservationId);
@@ -492,7 +353,6 @@ public class ReservationDAO {
             if (guestId == -1)
                 return false;
 
-            // 2. Update guests table
             try (PreparedStatement ps = conn.prepareStatement(updateGuestSql)) {
                 ps.setInt(1, adults);
                 ps.setInt(2, children);
@@ -500,41 +360,49 @@ public class ReservationDAO {
                 ps.executeUpdate();
             }
 
-            // 3. Update reservations table
             try (PreparedStatement ps = conn.prepareStatement(updateResSql)) {
                 ps.setString(1, specialRequests);
                 ps.setDate(2, newCheckIn);
                 ps.setDate(3, newCheckOut);
                 ps.setInt(4, reservationId);
                 int rows = ps.executeUpdate();
-
                 conn.commit();
                 return rows > 0;
             }
-
         } catch (SQLException e) {
-            System.err.println("Update reservation failed (complex): " + e.getMessage());
-            if (conn != null) {
-                try {
-                    conn.rollback();
-                } catch (SQLException ignored) {
-                }
-            }
+            System.err.println("Update reservation failed: " + e.getMessage());
+            rollbackQuietly(conn);
             return false;
         } finally {
-            if (conn != null) {
-                try {
-                    conn.setAutoCommit(true);
-                    conn.close();
-                } catch (SQLException ignored) {
-                }
-            }
+            resetAutoCommitAndClose(conn);
         }
     }
 
-    // ------------------------------------------------------
-    // Query / Display methods (continued)
-    // ------------------------------------------------------
+    public List<ReservationDisplayDTO> findAllActive() {
+        String sql = BASE_RESERVATION_SELECT
+                + " WHERE r.status IN ('confirmed', 'checked_in', 'pending') ORDER BY r.check_in DESC";
+        return fetchReservations(sql);
+    }
+
+    public List<ReservationDisplayDTO> findByStatus(String status) {
+        String sql = BASE_RESERVATION_SELECT + " WHERE r.status = ? ORDER BY r.check_in DESC";
+        return fetchReservations(sql, status);
+    }
+
+    public ReservationDisplayDTO findByReservationNumber(String reservationNumber) {
+        if (reservationNumber == null || reservationNumber.trim().isEmpty())
+            return null;
+        String sql = BASE_RESERVATION_SELECT + " WHERE r.reservation_number = ?";
+        return fetchSingleReservation(sql, reservationNumber.trim());
+    }
+
+    public List<ReservationDisplayDTO> findByGuestName(String guestName) {
+        if (guestName == null || guestName.trim().isEmpty())
+            return new ArrayList<>();
+        String searchPattern = "%" + guestName.trim().toLowerCase() + "%";
+        String sql = BASE_RESERVATION_SELECT + " WHERE LOWER(g.name) LIKE ? ORDER BY r.check_in DESC";
+        return fetchReservations(sql, searchPattern);
+    }
 
     private ReservationDisplayDTO mapToDisplayDTO(ResultSet rs) throws SQLException {
         ReservationDisplayDTO dto = new ReservationDisplayDTO();
@@ -553,17 +421,10 @@ public class ReservationDAO {
         dto.setLoyaltyNumber(rs.getString("loyalty_number"));
         dto.setRoomPreference(rs.getString("room_preference"));
         dto.setStatus(rs.getString("status"));
-
-        // Map the new fields — make sure these columns exist in your DB table
         dto.setAdults(rs.getInt("adults"));
         dto.setChildren(rs.getInt("children"));
-
         return dto;
     }
-
-    // ------------------------------------------------------
-    // Helpers
-    // ------------------------------------------------------
 
     private int executeCountQuery(String sql) {
         try (Connection conn = DBUtil.getConnection();
@@ -595,133 +456,5 @@ public class ReservationDAO {
             } catch (SQLException ignored) {
             }
         }
-    }
-    /**
-     * Find all reservations that are still active (not checked_out or cancelled)
-     */
-    public List<ReservationDisplayDTO> findAllActive() {
-        List<ReservationDisplayDTO> list = new ArrayList<>();
-        String sql = """
-        SELECT r.*, g.name AS guest_name
-        FROM reservations r
-        JOIN guests g ON r.guest_id = g.guest_id
-        WHERE r.status IN ('confirmed', 'checked_in', 'pending')
-        ORDER BY r.check_in DESC
-    """;
-
-        try (Connection conn = DBUtil.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-
-            while (rs.next()) {
-                list.add(mapToDisplayDTO(rs));
-            }
-        } catch (SQLException e) {
-            System.err.println("Active reservations query failed: " + e.getMessage());
-        }
-        return list;
-    }
-
-    /**
-     * Find reservations by status
-     */
-    public List<ReservationDisplayDTO> findByStatus(String status) {
-        List<ReservationDisplayDTO> list = new ArrayList<>();
-        String sql = """
-        SELECT r.*, g.name AS guest_name
-        FROM reservations r
-        JOIN guests g ON r.guest_id = g.guest_id
-        WHERE r.status = ?
-        ORDER BY r.check_in DESC
-    """;
-
-        try (Connection conn = DBUtil.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setString(1, status);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    list.add(mapToDisplayDTO(rs));
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("Status filter failed: " + e.getMessage());
-        }
-        return list;
-    }
-
-    /**
-     * Find a reservation by its unique reservation number (e.g. RES-2025-00123).
-     * Returns the full display DTO including guest name.
-     * Returns null if no matching reservation is found.
-     */
-    public ReservationDisplayDTO findByReservationNumber(String reservationNumber) {
-        if (reservationNumber == null || reservationNumber.trim().isEmpty()) {
-            return null;
-        }
-
-        String sql = """
-        SELECT r.*, g.name AS guest_name
-        FROM reservations r
-        JOIN guests g ON r.guest_id = g.guest_id
-        WHERE r.reservation_number = ?
-    """;
-
-        try (Connection conn = DBUtil.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setString(1, reservationNumber.trim());
-
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return mapToDisplayDTO(rs);
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("Failed to find reservation by number '" + reservationNumber + "': " + e.getMessage());
-            // Optional: e.printStackTrace(); if you want full stack trace in dev
-        }
-
-        return null;
-    }
-
-    /**
-     * Find all reservations for guests whose name contains the given search term (case-insensitive partial match).
-     * Returns a list of ReservationDisplayDTO objects (with guest name joined).
-     * Returns empty list if no matches or error.
-     */
-    public List<ReservationDisplayDTO> findByGuestName(String guestName) {
-        List<ReservationDisplayDTO> list = new ArrayList<>();
-
-        if (guestName == null || guestName.trim().isEmpty()) {
-            return list; // empty result for empty search
-        }
-
-        String searchPattern = "%" + guestName.trim().toLowerCase() + "%";
-
-        String sql = """
-        SELECT r.*, g.name AS guest_name
-        FROM reservations r
-        JOIN guests g ON r.guest_id = g.guest_id
-        WHERE LOWER(g.name) LIKE ?
-        ORDER BY r.check_in DESC
-    """;
-
-        try (Connection conn = DBUtil.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setString(1, searchPattern);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    list.add(mapToDisplayDTO(rs));
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("Guest name search failed for '" + guestName + "': " + e.getMessage());
-            // Optional: e.printStackTrace(); during development
-        }
-
-        return list;
     }
 }
