@@ -423,6 +423,13 @@ public class ReservationDAO {
         dto.setStatus(rs.getString("status"));
         dto.setAdults(rs.getInt("adults"));
         dto.setChildren(rs.getInt("children"));
+
+        // Try-catch for total_amount as it might not be in all result sets
+        try {
+            dto.setTotalAmount(rs.getDouble("total_amount"));
+        } catch (SQLException ignored) {
+        }
+
         return dto;
     }
 

@@ -2,9 +2,7 @@ package com.hotel.servlet;
 
 import com.hotel.config.DBUtil;
 import com.hotel.dao.ReservationDAO;
-import com.hotel.dao.RoomDAO;
 import com.hotel.dto.ReservationDisplayDTO;
-import com.hotel.model.User;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -14,6 +12,7 @@ import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.time.temporal.ChronoUnit;
 
@@ -21,7 +20,6 @@ import java.time.temporal.ChronoUnit;
 public class CheckoutServlet extends HttpServlet {
 
     private final ReservationDAO reservationDAO = new ReservationDAO();
-    private final RoomDAO roomDAO = new RoomDAO();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -31,20 +29,32 @@ public class CheckoutServlet extends HttpServlet {
             return;
         }
 
-        // Optional: pre-fill reservation number from query param
-        String resNum = req.getParameter("resNumber");
-        if (resNum != null && !resNum.trim().isEmpty()) {
-            ReservationDisplayDTO res = reservationDAO.findByReservationNumber(resNum.trim());
-            if (res != null) {
-                prepareCheckoutData(req, res);
-                req.getRequestDispatcher("/checkout.jsp").forward(req, resp);
-                return;
-            } else {
-                req.setAttribute("error", "Reservation not found.");
-            }
+        String resNumber = req.getParameter("resNumber");
+        if (resNumber == null || resNumber.trim().isEmpty()) {
+            resp.sendRedirect("reservation-search");
+            return;
         }
 
-        req.getRequestDispatcher("/checkout-search.jsp").forward(req, resp);
+        ReservationDisplayDTO reservation = reservationDAO.findByReservationNumber(resNumber);
+        if (reservation == null) {
+            req.setAttribute("error", "Reservation not found.");
+            req.getRequestDispatcher("/reservation-search.jsp").forward(req, resp);
+            return;
+        }
+
+        // Calculate nights and total bill
+        long nights = ChronoUnit.DAYS.between(reservation.getCheckIn().toLocalDate(),
+                reservation.getCheckOut().toLocalDate());
+        if (nights <= 0)
+            nights = 1; // Minimum 1 night charge
+
+        double totalBill = nights * reservation.getRatePerNight();
+
+        req.setAttribute("reservation", reservation);
+        req.setAttribute("nights", nights);
+        req.setAttribute("totalBill", totalBill);
+
+        req.getRequestDispatcher("/checkout.jsp").forward(req, resp);
     }
 
     @Override
@@ -55,116 +65,75 @@ public class CheckoutServlet extends HttpServlet {
             return;
         }
 
-        String action = req.getParameter("action");
-        String resIdStr = req.getParameter("reservationId");
-
-        if (resIdStr == null || resIdStr.trim().isEmpty()) {
-            req.setAttribute("error", "Reservation ID is required.");
-            req.getRequestDispatcher("/checkout-search.jsp").forward(req, resp);
+        String reservationIdStr = req.getParameter("reservationId");
+        if (reservationIdStr == null || reservationIdStr.isEmpty()) {
+            resp.sendRedirect("reservation-search");
             return;
         }
 
-        try {
-            int reservationId = Integer.parseInt(resIdStr.trim());
+        int reservationId = Integer.parseInt(reservationIdStr);
+        ReservationDisplayDTO reservation = reservationDAO.findById(reservationId);
 
-            if ("confirm_checkout".equals(action)) {
-                performCheckout(reservationId, req, resp, session);
-            } else {
-                // Show checkout confirmation page
-                ReservationDisplayDTO res = reservationDAO.findById(reservationId);
-                if (res == null) {
-                    req.setAttribute("error", "Reservation not found.");
-                    req.getRequestDispatcher("/checkout-search.jsp").forward(req, resp);
-                    return;
-                }
-                prepareCheckoutData(req, res);
-                req.getRequestDispatcher("/checkout.jsp").forward(req, resp);
-            }
-
-        } catch (NumberFormatException e) {
-            req.setAttribute("error", "Invalid reservation ID.");
-            req.getRequestDispatcher("/checkout-search.jsp").forward(req, resp);
+        if (reservation == null) {
+            resp.sendRedirect("reservation-search");
+            return;
         }
-    }
-
-    private void performCheckout(int reservationId, HttpServletRequest req, HttpServletResponse resp,
-            HttpSession session)
-            throws ServletException, IOException {
 
         Connection conn = null;
         try {
             conn = DBUtil.getConnection();
             conn.setAutoCommit(false);
 
-            // 1. Get reservation details
-            ReservationDisplayDTO res = reservationDAO.findById(reservationId);
-            if (res == null) {
-                throw new SQLException("Reservation not found");
+            // 1. Update reservation status to 'checked_out'
+            String updateStatusSql = "UPDATE reservations SET status = 'checked_out' WHERE reservation_id = ?";
+
+            // Re-calculate for display on success page
+            long nights = ChronoUnit.DAYS.between(reservation.getCheckIn().toLocalDate(),
+                    reservation.getCheckOut().toLocalDate());
+            if (nights <= 0)
+                nights = 1;
+            double totalBill = nights * reservation.getRatePerNight();
+
+            try (PreparedStatement psStatus = conn.prepareStatement(updateStatusSql)) {
+                psStatus.setInt(1, reservationId);
+                psStatus.executeUpdate();
             }
 
-            if (!"checked_in".equals(res.getStatus()) && !"confirmed".equals(res.getStatus())) {
-                throw new SQLException("Only checked-in or confirmed reservations can be checked out.");
-            }
-
-            // 2. Update status to checked_out
-            if (!reservationDAO.updateStatus(reservationId, "checked_out", conn)) {
-                throw new SQLException("Failed to update status to checked_out");
-            }
-
-            // 3. Free the room
-            Integer roomId = reservationDAO.getRoomIdByReservationId(reservationId, conn);
-            if (roomId != null) {
-                if (!roomDAO.markAsAvailable(roomId, conn)) {
-                    throw new SQLException("Failed to free room");
-                }
+            // 2. Free the room
+            String updateRoomSql = "UPDATE rooms SET status = 'available' WHERE room_id = ?";
+            try (PreparedStatement psRoom = conn.prepareStatement(updateRoomSql)) {
+                psRoom.setInt(1, reservation.getRoomId());
+                psRoom.executeUpdate();
             }
 
             conn.commit();
 
-            // Calculate final bill for display
-            long nights = ChronoUnit.DAYS.between(res.getCheckIn().toLocalDate(), res.getCheckOut().toLocalDate());
-            double total = nights * res.getRatePerNight();
-
-            session.setAttribute("successMsg", "Guest checked out successfully. Room is now available.");
-            req.setAttribute("reservation", res);
+            // Set attributes for success page
+            req.setAttribute("reservation", reservation);
             req.setAttribute("nights", nights);
-            req.setAttribute("totalBill", total);
+            req.setAttribute("totalBill", totalBill);
 
             req.getRequestDispatcher("/checkout-success.jsp").forward(req, resp);
 
         } catch (SQLException e) {
-            rollbackQuietly(conn);
-            req.setAttribute("error", "Checkout failed: " + e.getMessage());
-            req.getRequestDispatcher("/checkout-search.jsp").forward(req, resp);
-        } finally {
-            resetAutoCommitAndClose(conn);
-        }
-    }
-
-    private void prepareCheckoutData(HttpServletRequest req, ReservationDisplayDTO res) {
-        long nights = ChronoUnit.DAYS.between(res.getCheckIn().toLocalDate(), res.getCheckOut().toLocalDate());
-        double total = nights * res.getRatePerNight();
-
-        req.setAttribute("reservation", res);
-        req.setAttribute("nights", nights);
-        req.setAttribute("totalBill", total);
-    }
-
-    private void rollbackQuietly(Connection conn) {
-        if (conn != null) {
-            try {
-                conn.rollback();
-            } catch (SQLException ignored) {
+            if (conn != null) {
+                try {
+                    conn.rollback();
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
             }
-        }
-    }
-
-    private void resetAutoCommitAndClose(Connection conn) {
-        if (conn != null) {
-            try {
-                conn.setAutoCommit(true);
-                conn.close();
-            } catch (SQLException ignored) {
+            e.printStackTrace();
+            req.setAttribute("error", "Checkout failed: " + e.getMessage());
+            req.getRequestDispatcher("/checkout.jsp").forward(req, resp);
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }

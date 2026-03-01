@@ -7,9 +7,9 @@ public class ReservationDisplayDTO {
     private Integer id;
     private String reservationNumber;
     private Integer guestId;
-    private String guestName;           // display-only from JOIN
+    private String guestName; // display-only from JOIN
     private Integer roomId;
-    private String roomType;            // optional — if you join it
+    private String roomType; // optional — if you join it
     private Date checkIn;
     private Date checkOut;
     private Double ratePerNight;
@@ -19,7 +19,8 @@ public class ReservationDisplayDTO {
     private Boolean luggageStorage;
     private String loyaltyNumber;
     private String roomPreference;
-    private String status;              // if present in DB
+    private String status; // if present in DB
+    private Double totalAmount;
 
     // NEW fields needed for the update form
     private Integer adults;
@@ -27,63 +28,161 @@ public class ReservationDisplayDTO {
     private Integer infants;
 
     // Constructors
-    public ReservationDisplayDTO() {}
+    public ReservationDisplayDTO() {
+    }
 
     // Getters & Setters (all fields)
 
-    public Integer getId() { return id; }
-    public void setId(Integer id) { this.id = id; }
+    public Integer getId() {
+        return id;
+    }
 
-    public String getReservationNumber() { return reservationNumber; }
-    public void setReservationNumber(String reservationNumber) { this.reservationNumber = reservationNumber; }
+    public void setId(Integer id) {
+        this.id = id;
+    }
 
-    public Integer getGuestId() { return guestId; }
-    public void setGuestId(Integer guestId) { this.guestId = guestId; }
+    public String getReservationNumber() {
+        return reservationNumber;
+    }
 
-    public String getGuestName() { return guestName; }
-    public void setGuestName(String guestName) { this.guestName = guestName; }
+    public void setReservationNumber(String reservationNumber) {
+        this.reservationNumber = reservationNumber;
+    }
 
-    public Integer getRoomId() { return roomId; }
-    public void setRoomId(Integer roomId) { this.roomId = roomId; }
+    public Integer getGuestId() {
+        return guestId;
+    }
 
-    public String getRoomType() { return roomType; }
-    public void setRoomType(String roomType) { this.roomType = roomType; }
+    public void setGuestId(Integer guestId) {
+        this.guestId = guestId;
+    }
 
-    public Date getCheckIn() { return checkIn; }
-    public void setCheckIn(Date checkIn) { this.checkIn = checkIn; }
+    public String getGuestName() {
+        return guestName;
+    }
 
-    public Date getCheckOut() { return checkOut; }
-    public void setCheckOut(Date checkOut) { this.checkOut = checkOut; }
+    public void setGuestName(String guestName) {
+        this.guestName = guestName;
+    }
 
-    public Double getRatePerNight() { return ratePerNight; }
-    public void setRatePerNight(Double ratePerNight) { this.ratePerNight = ratePerNight; }
+    public Integer getRoomId() {
+        return roomId;
+    }
 
-    public String getSpecialRequests() { return specialRequests; }
-    public void setSpecialRequests(String specialRequests) { this.specialRequests = specialRequests; }
+    public void setRoomId(Integer roomId) {
+        this.roomId = roomId;
+    }
 
-    public String getVehicleNumber() { return vehicleNumber; }
-    public void setVehicleNumber(String vehicleNumber) { this.vehicleNumber = vehicleNumber; }
+    public String getRoomType() {
+        return roomType;
+    }
 
-    public Time getWakeUpCall() { return wakeUpCall; }
-    public void setWakeUpCall(Time wakeUpCall) { this.wakeUpCall = wakeUpCall; }
+    public void setRoomType(String roomType) {
+        this.roomType = roomType;
+    }
 
-    public Boolean getLuggageStorage() { return luggageStorage; }
-    public void setLuggageStorage(Boolean luggageStorage) { this.luggageStorage = luggageStorage; }
+    public Date getCheckIn() {
+        return checkIn;
+    }
 
-    public String getLoyaltyNumber() { return loyaltyNumber; }
-    public void setLoyaltyNumber(String loyaltyNumber) { this.loyaltyNumber = loyaltyNumber; }
+    public void setCheckIn(Date checkIn) {
+        this.checkIn = checkIn;
+    }
 
-    public String getRoomPreference() { return roomPreference; }
-    public void setRoomPreference(String roomPreference) { this.roomPreference = roomPreference; }
+    public Date getCheckOut() {
+        return checkOut;
+    }
 
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public void setCheckOut(Date checkOut) {
+        this.checkOut = checkOut;
+    }
+
+    public Double getRatePerNight() {
+        return ratePerNight;
+    }
+
+    public void setRatePerNight(Double ratePerNight) {
+        this.ratePerNight = ratePerNight;
+    }
+
+    public String getSpecialRequests() {
+        return specialRequests;
+    }
+
+    public void setSpecialRequests(String specialRequests) {
+        this.specialRequests = specialRequests;
+    }
+
+    public String getVehicleNumber() {
+        return vehicleNumber;
+    }
+
+    public void setVehicleNumber(String vehicleNumber) {
+        this.vehicleNumber = vehicleNumber;
+    }
+
+    public Time getWakeUpCall() {
+        return wakeUpCall;
+    }
+
+    public void setWakeUpCall(Time wakeUpCall) {
+        this.wakeUpCall = wakeUpCall;
+    }
+
+    public Boolean getLuggageStorage() {
+        return luggageStorage;
+    }
+
+    public void setLuggageStorage(Boolean luggageStorage) {
+        this.luggageStorage = luggageStorage;
+    }
+
+    public String getLoyaltyNumber() {
+        return loyaltyNumber;
+    }
+
+    public void setLoyaltyNumber(String loyaltyNumber) {
+        this.loyaltyNumber = loyaltyNumber;
+    }
+
+    public String getRoomPreference() {
+        return roomPreference;
+    }
+
+    public void setRoomPreference(String roomPreference) {
+        this.roomPreference = roomPreference;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
 
     // NEW getters/setters for edit form fields
-    public Integer getAdults() { return adults; }
-    public void setAdults(Integer adults) { this.adults = adults; }
+    public Integer getAdults() {
+        return adults;
+    }
 
-    public Integer getChildren() { return children; }
-    public void setChildren(Integer children) { this.children = children; }
+    public void setAdults(Integer adults) {
+        this.adults = adults;
+    }
 
+    public Integer getChildren() {
+        return children;
+    }
+
+    public void setChildren(Integer children) {
+        this.children = children;
+    }
+
+    public Double getTotalAmount() {
+        return totalAmount;
+    }
+
+    public void setTotalAmount(Double totalAmount) {
+        this.totalAmount = totalAmount;
+    }
 }
