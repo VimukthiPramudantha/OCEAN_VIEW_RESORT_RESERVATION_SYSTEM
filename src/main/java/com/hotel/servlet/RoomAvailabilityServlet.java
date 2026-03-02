@@ -14,7 +14,7 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Date;               // ← added
+import java.util.Date; // ← added
 import java.util.List;
 import java.util.Map;
 
@@ -47,13 +47,14 @@ public class RoomAvailabilityServlet extends HttpServlet {
         LocalDate lastOfMonth = yearMonth.atEndOfMonth();
 
         // Get availability for the whole month
-        Map<LocalDate, List<RoomAvailabilityDTO>> availability =
-                roomDAO.getAvailabilityByDateRange(firstOfMonth, lastOfMonth, null); // null = all types
+        String roomType = req.getParameter("type");
+        Map<LocalDate, List<RoomAvailabilityDTO>> availability = roomDAO.getAvailabilityByDateRange(firstOfMonth,
+                lastOfMonth, roomType);
 
         // Prepare calendar structure
         List<LocalDate> calendarDays = new ArrayList<>();
         // Add padding days (previous month) to start on correct weekday
-        int dayOfWeek = firstOfMonth.getDayOfWeek().getValue() % 7; // 1=Mon, 7=Sun → adjust for Sunday start
+        int dayOfWeek = firstOfMonth.getDayOfWeek().getValue() % 7; // Sunday=0, Monday=1...
         LocalDate startPadding = firstOfMonth.minusDays(dayOfWeek);
         for (int i = 0; i < dayOfWeek; i++) {
             calendarDays.add(startPadding.plusDays(i));
@@ -63,7 +64,8 @@ public class RoomAvailabilityServlet extends HttpServlet {
             calendarDays.add(yearMonth.atDay(day));
         }
 
-        req.setAttribute("yearMonth", yearMonth);          // keep for navigation
+        req.setAttribute("selectedType", roomType);
+        req.setAttribute("yearMonth", yearMonth); // keep for navigation
         req.setAttribute("firstDayOfMonth", firstDayAsDate); // ← new attribute for <fmt:formatDate>
         req.setAttribute("calendarDays", calendarDays);
         req.setAttribute("availability", availability);

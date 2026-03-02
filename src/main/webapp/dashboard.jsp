@@ -315,11 +315,6 @@
             <a href="add-reservation" class="btn-action">Create Booking</a>
         </div>
         <div class="action-card">
-            <h3>Check Availability</h3>
-            <p>Quickly view available rooms for any date range.</p>
-            <a href="check-availability" class="btn-action">Check Now</a>
-        </div>
-        <div class="action-card">
             <h3>Room Calendar</h3>
             <p>Visual monthly overview of room availability and occupancy.</p>
             <a href="room-availability" class="btn-action">View Calendar</a>

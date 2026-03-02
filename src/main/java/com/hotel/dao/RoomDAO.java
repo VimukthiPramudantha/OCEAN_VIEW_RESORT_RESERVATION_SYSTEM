@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-public class RoomDAO {  // ← Removed incorrect generic <RoomAvailabilityDTO>
+public class RoomDAO { // ← Removed incorrect generic <RoomAvailabilityDTO>
 
     /**
      * Counts total number of rooms in the system (all types, all statuses)
@@ -18,8 +18,8 @@ public class RoomDAO {  // ← Removed incorrect generic <RoomAvailabilityDTO>
     public int countTotalRooms() {
         String sql = "SELECT COUNT(*) FROM rooms";
         try (Connection conn = DBUtil.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+                PreparedStatement ps = conn.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
             if (rs.next()) {
                 return rs.getInt(1);
             }
@@ -35,8 +35,8 @@ public class RoomDAO {  // ← Removed incorrect generic <RoomAvailabilityDTO>
     public int countBookedRooms() {
         String sql = "SELECT COUNT(*) FROM rooms WHERE status = 'booked'";
         try (Connection conn = DBUtil.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+                PreparedStatement ps = conn.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
             if (rs.next()) {
                 return rs.getInt(1);
             }
@@ -49,7 +49,8 @@ public class RoomDAO {  // ← Removed incorrect generic <RoomAvailabilityDTO>
     /**
      * Returns availability status for each date in the range, grouped by date.
      */
-    public Map<LocalDate, List<RoomAvailabilityDTO>> getAvailabilityByDateRange(LocalDate start, LocalDate end, String roomType) {
+    public Map<LocalDate, List<RoomAvailabilityDTO>> getAvailabilityByDateRange(LocalDate start, LocalDate end,
+            String roomType) {
         Map<LocalDate, List<RoomAvailabilityDTO>> map = new TreeMap<>();
 
         LocalDate current = start;
@@ -62,23 +63,49 @@ public class RoomDAO {  // ← Removed incorrect generic <RoomAvailabilityDTO>
         return map;
     }
 
-    /**
-     * Get availability for one specific day (placeholder — replace with real query)
-     */
     private List<RoomAvailabilityDTO> getDailyAvailability(LocalDate date, String roomType) {
-        List<RoomAvailabilityDTO> list = new ArrayList<>();  // ← Fixed: use ArrayList, not List
+        List<RoomAvailabilityDTO> list = new ArrayList<>();
 
-        // TODO: Implement real SQL query here
-        // Example pseudo-code:
-        // String sql = "SELECT room_id, type, status FROM rooms WHERE ... AND NOT EXISTS (overlapping reservation on ?)";
+        String sql = """
+                    SELECT r.room_id, r.type,
+                           CASE
+                               WHEN res.reservation_id IS NULL THEN 'available'
+                               ELSE res.status
+                           END as status
+                    FROM rooms r
+                    LEFT JOIN reservations res
+                      ON r.room_id = res.room_id
+                      AND res.status NOT IN ('cancelled', 'checked_out', 'deleted')
+                      AND ? BETWEEN res.check_in AND DATE_SUB(res.check_out, INTERVAL 1 DAY)
+                    WHERE 1=1
+                """;
 
-        // For now — dummy data so it compiles and runs
-        // Remove this block in production and write real query
-        RoomAvailabilityDTO dto = new RoomAvailabilityDTO();
-        dto.roomId = 101;
-        dto.roomType = "Deluxe";
-        dto.status = "available";
-        list.add(dto);
+        if (roomType != null && !roomType.isEmpty()) {
+            sql += " AND r.type = ?";
+        }
+
+        sql += " ORDER BY r.room_id";
+
+        try (Connection conn = DBUtil.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setDate(1, java.sql.Date.valueOf(date));
+            if (roomType != null && !roomType.isEmpty()) {
+                ps.setString(2, roomType);
+            }
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    RoomAvailabilityDTO dto = new RoomAvailabilityDTO();
+                    dto.roomId = rs.getInt("room_id");
+                    dto.roomType = rs.getString("type");
+                    dto.status = rs.getString("status");
+                    list.add(dto);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Daily availability lookup failed: " + e.getMessage());
+        }
 
         return list;
     }
@@ -87,8 +114,8 @@ public class RoomDAO {  // ← Removed incorrect generic <RoomAvailabilityDTO>
         List<String> types = new ArrayList<>();
         String sql = "SELECT DISTINCT type FROM rooms ORDER BY type";
         try (Connection conn = DBUtil.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+                PreparedStatement ps = conn.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 types.add(rs.getString("type"));
             }
@@ -98,7 +125,7 @@ public class RoomDAO {  // ← Removed incorrect generic <RoomAvailabilityDTO>
         return types;
     }
 
- /**
+    /**
      * Finds the first available room ID for the given type and date range.
      * This is the correct method to use during actual booking.
      * Returns -1 if no room is available in the requested period.
