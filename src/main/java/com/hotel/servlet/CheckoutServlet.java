@@ -120,8 +120,8 @@ public class CheckoutServlet extends HttpServlet {
 
             new com.hotel.dao.CheckoutDAO().save(checkoutRecord, conn);
 
-            // 3. Free the room
-            String updateRoomSql = "UPDATE rooms SET status = 'available' WHERE room_id = ?";
+            // 3. Set the room to 'cleaning' status
+            String updateRoomSql = "UPDATE rooms SET status = 'cleaning' WHERE room_id = ?";
             try (PreparedStatement psRoom = conn.prepareStatement(updateRoomSql)) {
                 psRoom.setInt(1, reservation.getRoomId());
                 psRoom.executeUpdate();

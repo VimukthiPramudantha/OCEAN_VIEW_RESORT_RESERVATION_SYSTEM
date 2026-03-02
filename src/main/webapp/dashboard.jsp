@@ -268,6 +268,11 @@
             </a>
         </li>
         <li class="nav-item">
+            <a href="manage-rooms" class="nav-link">
+                <i class="fas fa-door-open"></i> <span>Room Management</span>
+            </a>
+        </li>
+        <li class="nav-item">
             <a href="help" class="nav-link">
                 <i class="fas fa-question-circle"></i> <span>Portal Help</span>
             </a>
@@ -328,6 +333,11 @@
             <h3>Search Reservations</h3>
             <p>Quickly search for specific reservations and handle checkouts.</p>
             <a href="reservation-search" class="btn-action">Search Now</a>
+        </div>
+        <div class="action-card">
+            <h3>Room Management</h3>
+            <p>Add new rooms and manage cleaning/availability status.</p>
+            <a href="manage-rooms" class="btn-action">Manage Rooms</a>
         </div>
         <div class="action-card">
             <h3>Staff Guidelines</h3>

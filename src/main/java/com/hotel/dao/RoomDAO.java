@@ -254,4 +254,58 @@ public class RoomDAO { // ← Removed incorrect generic <RoomAvailabilityDTO>
         }
         return 0.0;
     }
+
+    /**
+     * Adds a new room to the system.
+     */
+    public boolean addRoom(String type, double rate) {
+        String sql = "INSERT INTO rooms (type, rate_per_night, status) VALUES (?, ?, 'available')";
+        try (Connection conn = DBUtil.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, type);
+            ps.setDouble(2, rate);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Error adding room: " + e.getMessage());
+        }
+        return false;
+    }
+
+    /**
+     * Updates the status of a specific room.
+     */
+    public boolean updateRoomStatus(int roomId, String status) {
+        String sql = "UPDATE rooms SET status = ? WHERE room_id = ?";
+        try (Connection conn = DBUtil.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, status);
+            ps.setInt(2, roomId);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Error updating room status: " + e.getMessage());
+        }
+        return false;
+    }
+
+    /**
+     * Retrieves all rooms in the system.
+     */
+    public List<RoomAvailabilityDTO> getAllRooms() {
+        List<RoomAvailabilityDTO> list = new ArrayList<>();
+        String sql = "SELECT * FROM rooms ORDER BY room_id";
+        try (Connection conn = DBUtil.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                RoomAvailabilityDTO dto = new RoomAvailabilityDTO();
+                dto.roomId = rs.getInt("room_id");
+                dto.roomType = rs.getString("type");
+                dto.status = rs.getString("status");
+                list.add(dto);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error fetching all rooms: " + e.getMessage());
+        }
+        return list;
+    }
 }
