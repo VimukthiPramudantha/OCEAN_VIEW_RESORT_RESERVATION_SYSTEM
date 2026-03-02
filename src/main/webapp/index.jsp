@@ -524,8 +524,8 @@
             <div class="room-card">
                 <div class="room-img" style="background-image: url('https://images.unsplash.com/photo-1590490360182-c33d57733427?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80')"></div>
                 <div class="room-info">
-                    <h4>Premium Deluxe Room</h4>
-                    <p>Breath-taking ocean views with a private balcony and contemporary minimalist design.</p>
+                    <h4>Standard Room</h4>
+                    <p>Comfortable and elegant, our standard rooms offer all the essential amenities for a relaxing stay.</p>
                     <div class="room-price">
                         <div class="price">$250 <span>/ night</span></div>
                         <a href="#"><i class="fas fa-arrow-right" style="color:var(--primary)"></i></a>
@@ -536,8 +536,8 @@
             <div class="room-card">
                 <div class="room-img" style="background-image: url('https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80')"></div>
                 <div class="room-info">
-                    <h4>Panoramic Ocean Suite</h4>
-                    <p>Spacious floor-to-ceiling windows overlooking the horizon with a separate lounge area.</p>
+                    <h4>Deluxe Ocean View</h4>
+                    <p>Breath-taking ocean views with a private balcony and contemporary minimalist design.</p>
                     <div class="room-price">
                         <div class="price">$450 <span>/ night</span></div>
                         <a href="#"><i class="fas fa-arrow-right" style="color:var(--primary)"></i></a>
@@ -548,8 +548,8 @@
             <div class="room-card">
                 <div class="room-img" style="background-image: url('https://images.unsplash.com/photo-1595576508898-0ad5c879a061?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80')"></div>
                 <div class="room-info">
-                    <h4>Royal Presidential Villa</h4>
-                    <p>The pinnacle of luxury with a private infinity pool, dedicated butler, and exclusive beach access.</p>
+                    <h4>Executive Suite</h4>
+                    <p>Spacious floor-to-ceiling windows overlooking the horizon with a separate lounge area.</p>
                     <div class="room-price">
                         <div class="price">$950 <span>/ night</span></div>
                         <a href="#"><i class="fas fa-arrow-right" style="color:var(--primary)"></i></a>
