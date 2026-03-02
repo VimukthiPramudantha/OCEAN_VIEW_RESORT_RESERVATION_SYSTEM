@@ -302,6 +302,18 @@
                 <i class="fas fa-search"></i> <span>Availability</span>
             </a>
         </li>
+        <c:if test="${user.role eq 'admin'}">
+            <li class="nav-item">
+                <a href="manage-rooms" class="nav-link">
+                    <i class="fas fa-door-open"></i> <span>Room Management</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="add-user" class="nav-link">
+                    <i class="fas fa-user-plus"></i> <span>Add User</span>
+                </a>
+            </li>
+        </c:if>
         <li class="nav-item">
             <a href="help" class="nav-link">
                 <i class="fas fa-question-circle"></i> <span>Portal Help</span>
@@ -351,29 +363,31 @@
             <a href="update-reservation" class="btn-manage">Edit Booking</a>
         </div>
 
-        <!-- Cancel Reservation -->
-        <div class="management-card">
-            <div class="card-icon"><i class="fas fa-calendar-times"></i></div>
-            <h3>Cancel Stay</h3>
-            <p>Properly handle cancellation requests and instantly free up room inventory for new guests.</p>
-            <a href="cancel-reservation" class="btn-manage btn-cancel">Cancel Booking</a>
-        </div>
+        <c:if test="${user.role eq 'admin'}">
+            <!-- Cancel Reservation -->
+            <div class="management-card">
+                <div class="card-icon"><i class="fas fa-calendar-times"></i></div>
+                <h3>Cancel Stay</h3>
+                <p>Properly handle cancellation requests and instantly free up room inventory for new guests.</p>
+                <a href="cancel-reservation" class="btn-manage btn-cancel">Cancel Booking</a>
+            </div>
 
-        <!-- Reservation History -->
-        <div class="management-card">
-            <div class="card-icon"><i class="fas fa-history"></i></div>
-            <h3>Guest History</h3>
-            <p>Review comprehensive historical data for returning guests using their NIC or Passport records.</p>
-            <a href="reservation-history" class="btn-manage btn-history">View History</a>
-        </div>
+            <!-- Reservation History -->
+            <div class="management-card">
+                <div class="card-icon"><i class="fas fa-history"></i></div>
+                <h3>Guest History</h3>
+                <p>Review comprehensive historical data for returning guests using their NIC or Passport records.</p>
+                <a href="reservation-history" class="btn-manage btn-history">View History</a>
+            </div>
 
-        <!-- Delete Reservation (Admin only context) -->
-        <div class="management-card">
-            <div class="card-icon"><i class="fas fa-trash-alt"></i></div>
-            <h3>Purge Record</h3>
-            <p>Permanently remove reservation entries from the system database. Intended for administrative cleanup.</p>
-            <a href="delete-reservation" class="btn-manage btn-delete">Delete Record</a>
-        </div>
+            <!-- Delete Reservation (Admin only context) -->
+            <div class="management-card">
+                <div class="card-icon"><i class="fas fa-trash-alt"></i></div>
+                <h3>Purge Record</h3>
+                <p>Permanently remove reservation entries from the system database. Intended for administrative cleanup.</p>
+                <a href="delete-reservation" class="btn-manage btn-delete">Delete Record</a>
+            </div>
+        </c:if>
 
     </div>
 </main>

@@ -35,4 +35,35 @@ public class UserDAO {
         }
         return null; // invalid credentials
     }
+
+    public boolean createUser(User user) {
+        String sql = "INSERT INTO users (username, password, full_name, role) VALUES (?, ?, ?, ?)";
+        try (Connection conn = DBUtil.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, user.getUsername());
+            ps.setString(2, user.getPassword());
+            ps.setString(3, user.getFullName());
+            ps.setString(4, user.getRole());
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("User creation error: " + e.getMessage());
+        }
+        return false;
+    }
+
+    public boolean isUsernameExists(String username) {
+        String sql = "SELECT COUNT(*) FROM users WHERE username = ?";
+        try (Connection conn = DBUtil.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, username);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Username check error: " + e.getMessage());
+        }
+        return false;
+    }
 }

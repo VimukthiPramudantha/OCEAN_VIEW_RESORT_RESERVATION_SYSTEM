@@ -214,7 +214,11 @@
     <div class="brand"><h1>OCEAN VIEW</h1></div>
     <ul style="list-style: none; flex-grow: 1;">
         <li><a href="dashboard" class="nav-link"><i class="fas fa-chart-line"></i> <span>Dashboard</span></a></li>
-        <li><a href="manage-rooms" class="nav-link"><i class="fas fa-door-open"></i> <span>Manage Rooms</span></a></li>
+        <c:if test="${user.role eq 'admin'}">
+            <li><a href="manage-rooms" class="nav-link active"><i class="fas fa-door-open"></i> <span>Manage Rooms</span></a></li>
+            <li><a href="add-user" class="nav-link"><i class="fas fa-user-plus"></i> <span>Add User</span></a></li>
+        </c:if>
+        <li><a href="manage-reservations" class="nav-link"><i class="fas fa-calendar-check"></i> <span>Manage Bookings</span></a></li>
         <li><a href="room-availability" class="nav-link"><i class="fas fa-calendar-alt"></i> <span>Availability</span></a></li>
     </ul>
 </aside>

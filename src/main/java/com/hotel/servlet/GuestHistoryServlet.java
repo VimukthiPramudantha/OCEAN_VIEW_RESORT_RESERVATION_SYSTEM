@@ -4,6 +4,7 @@ import com.hotel.dao.GuestDAO;
 import com.hotel.dao.ReservationDAO;
 import com.hotel.dto.ReservationDisplayDTO;
 import com.hotel.model.Guest;
+import com.hotel.model.User;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -25,6 +26,13 @@ public class GuestHistoryServlet extends HttpServlet {
         HttpSession session = req.getSession(false);
         if (session == null || session.getAttribute("user") == null) {
             resp.sendRedirect("login");
+            return;
+        }
+
+        User user = (User) session.getAttribute("user");
+        if (!"admin".equalsIgnoreCase(user.getRole())) {
+            req.setAttribute("error", "Access Denied: Only administrators can view guest history.");
+            req.getRequestDispatcher("/dashboard.jsp").forward(req, resp);
             return;
         }
 
@@ -87,6 +95,12 @@ public class GuestHistoryServlet extends HttpServlet {
         HttpSession session = req.getSession(false);
         if (session == null || session.getAttribute("user") == null) {
             resp.sendRedirect("login");
+            return;
+        }
+
+        User user = (User) session.getAttribute("user");
+        if (!"admin".equalsIgnoreCase(user.getRole())) {
+            resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Access Denied");
             return;
         }
 

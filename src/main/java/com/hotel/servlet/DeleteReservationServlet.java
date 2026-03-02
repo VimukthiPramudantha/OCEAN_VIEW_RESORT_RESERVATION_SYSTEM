@@ -28,6 +28,13 @@ public class DeleteReservationServlet extends HttpServlet {
             return;
         }
 
+        User user = (User) session.getAttribute("user");
+        if (!"admin".equalsIgnoreCase(user.getRole())) {
+            req.setAttribute("error", "Access Denied: Only administrators can purge records.");
+            req.getRequestDispatcher("/dashboard.jsp").forward(req, resp);
+            return;
+        }
+
         List<ReservationDisplayDTO> reservations = reservationDAO.findAll();
         req.setAttribute("reservations", reservations);
 
@@ -39,6 +46,12 @@ public class DeleteReservationServlet extends HttpServlet {
         HttpSession session = req.getSession(false);
         if (session == null || session.getAttribute("user") == null) {
             resp.sendRedirect("login");
+            return;
+        }
+
+        User user = (User) session.getAttribute("user");
+        if (!"admin".equalsIgnoreCase(user.getRole())) {
+            resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Access Denied");
             return;
         }
 

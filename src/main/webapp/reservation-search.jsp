@@ -346,6 +346,18 @@
                 <i class="fas fa-search"></i> <span>Availability</span>
             </a>
         </li>
+        <c:if test="${user.role eq 'admin'}">
+            <li class="nav-item">
+                <a href="manage-rooms" class="nav-link">
+                    <i class="fas fa-door-open"></i> <span>Room Management</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="add-user" class="nav-link">
+                    <i class="fas fa-user-plus"></i> <span>Add User</span>
+                </a>
+            </li>
+        </c:if>
         <li class="nav-item">
             <a href="help" class="nav-link">
                 <i class="fas fa-question-circle"></i> <span>Portal Help</span>

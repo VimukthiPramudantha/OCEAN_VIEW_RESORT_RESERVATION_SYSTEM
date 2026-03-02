@@ -2,6 +2,7 @@ package com.hotel.servlet;
 
 import com.hotel.dao.RoomDAO;
 import com.hotel.dto.RoomAvailabilityDTO;
+import com.hotel.model.User;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -26,6 +27,13 @@ public class RoomManagementServlet extends HttpServlet {
             return;
         }
 
+        User user = (User) session.getAttribute("user");
+        if (!"admin".equalsIgnoreCase(user.getRole())) {
+            req.setAttribute("error", "Access Denied: Only administrators can manage room inventory.");
+            req.getRequestDispatcher("/dashboard.jsp").forward(req, resp);
+            return;
+        }
+
         List<RoomAvailabilityDTO> rooms = roomDAO.getAllRooms();
         req.setAttribute("rooms", rooms);
         req.getRequestDispatcher("/manage-rooms.jsp").forward(req, resp);
@@ -36,6 +44,12 @@ public class RoomManagementServlet extends HttpServlet {
         HttpSession session = req.getSession(false);
         if (session == null || session.getAttribute("user") == null) {
             resp.sendRedirect("login");
+            return;
+        }
+
+        User user = (User) session.getAttribute("user");
+        if (!"admin".equalsIgnoreCase(user.getRole())) {
+            resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Access Denied");
             return;
         }
 

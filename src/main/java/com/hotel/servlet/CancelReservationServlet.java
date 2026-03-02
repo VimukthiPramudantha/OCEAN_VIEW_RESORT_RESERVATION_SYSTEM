@@ -34,6 +34,13 @@ public class CancelReservationServlet extends HttpServlet {
             return;
         }
 
+        User user = (User) session.getAttribute("user");
+        if (!"admin".equalsIgnoreCase(user.getRole())) {
+            req.setAttribute("error", "Access Denied: Only administrators can cancel stays.");
+            req.getRequestDispatcher("/dashboard.jsp").forward(req, resp);
+            return;
+        }
+
         List<ReservationDisplayDTO> reservations = reservationDAO.findActiveForCancellation();
         req.setAttribute("reservations", reservations);
 
@@ -49,6 +56,11 @@ public class CancelReservationServlet extends HttpServlet {
         }
 
         User user = (User) session.getAttribute("user");
+        if (!"admin".equalsIgnoreCase(user.getRole())) {
+            resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Access Denied");
+            return;
+        }
+
         String cancelledBy = user.getUsername();
 
         String resIdStr = req.getParameter("reservationId");

@@ -267,11 +267,18 @@
                 <i class="fas fa-search-location"></i> <span>Search Reservations</span>
             </a>
         </li>
-        <li class="nav-item">
-            <a href="manage-rooms" class="nav-link">
-                <i class="fas fa-door-open"></i> <span>Room Management</span>
-            </a>
-        </li>
+        <c:if test="${user.role eq 'admin'}">
+            <li class="nav-item">
+                <a href="manage-rooms" class="nav-link">
+                    <i class="fas fa-door-open"></i> <span>Room Management</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="add-user" class="nav-link">
+                    <i class="fas fa-user-plus"></i> <span>Add User</span>
+                </a>
+            </li>
+        </c:if>
         <li class="nav-item">
             <a href="help" class="nav-link">
                 <i class="fas fa-question-circle"></i> <span>Portal Help</span>
@@ -283,10 +290,22 @@
     </a>
 </aside>
 <main class="main-content">
-    <section class="welcome-section">
+    <div class="welcome-section">
         <h2>Welcome Back, ${user.fullName.split(' ')[0]}</h2>
         <p>Overview of resort operations for today.</p>
-    </section>
+    </div>
+
+    <c:if test="${not empty error}">
+        <div style="padding: 15px; background: rgba(230, 57, 70, 0.1); color: #e63946; border-radius: 12px; margin-bottom: 30px; border: 1px solid rgba(230, 57, 70, 0.2); font-size: 14px;">
+            <i class="fas fa-exclamation-circle" style="margin-right: 8px;"></i> ${error}
+        </div>
+    </c:if>
+    <c:if test="${not empty successMsg}">
+         <div style="padding: 15px; background: rgba(42, 157, 143, 0.1); color: #2a9d8f; border-radius: 12px; margin-bottom: 30px; border: 1px solid rgba(42, 157, 143, 0.2); font-size: 14px;">
+            <i class="fas fa-check-circle" style="margin-right: 8px;"></i> ${successMsg}
+        </div>
+        <% session.removeAttribute("successMsg"); %>
+    </c:if>
     <div class="stats-grid">
         <div class="stat-card">
             <div class="stat-title">Today's Check-ins</div>
@@ -334,11 +353,18 @@
             <p>Quickly search for specific reservations and handle checkouts.</p>
             <a href="reservation-search" class="btn-action">Search Now</a>
         </div>
-        <div class="action-card">
-            <h3>Room Management</h3>
-            <p>Add new rooms and manage cleaning/availability status.</p>
-            <a href="manage-rooms" class="btn-action">Manage Rooms</a>
-        </div>
+        <c:if test="${user.role eq 'admin'}">
+            <div class="action-card">
+                <h3>Room Management</h3>
+                <p>Add new rooms and manage cleaning/availability status.</p>
+                <a href="manage-rooms" class="btn-action">Manage Rooms</a>
+            </div>
+            <div class="action-card">
+                <h3>User Management</h3>
+                <p>Register new staff or admin accounts to the system.</p>
+                <a href="add-user" class="btn-action">Add New User</a>
+            </div>
+        </c:if>
         <div class="action-card">
             <h3>Staff Guidelines</h3>
             <p>Access system manuals and operation protocols.</p>
