@@ -1,95 +1,109 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
-<%@ page import="java.time.LocalDate" %>
+<%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Room Availability - ${yearMonth}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; background: #f8f9fa; }
+        body { font-family: 'Poppins', sans-serif; background: #f8fbff; padding: 30px; }
         h1 { text-align: center; color: #0077b6; }
-        .calendar { width: 100%; border-collapse: collapse; margin: 20px 0; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .calendar th, .calendar td { border: 1px solid #ddd; padding: 8px; text-align: center; vertical-align: top; height: 100px; }
-        .calendar th { background: #0077b6; color: white; }
-        .day-header { font-weight: bold; background: #e9ecef; }
-        .available { background: #d4edda; color: #155724; }
-        .booked { background: #f8d7da; color: #721c24; }
-        .checked-in { background: #fff3cd; color: #856404; }
-        .day-number { font-size: 1.2em; font-weight: bold; margin-bottom: 6px; }
-        .tooltip { position: relative; display: inline-block; cursor: pointer; }
-        .tooltip .tooltiptext {
-            visibility: hidden;
-            width: 220px;
-            background-color: #555;
-            color: #fff;
-            text-align: center;
-            border-radius: 6px;
-            padding: 8px;
-            position: absolute;
-            z-index: 1;
-            bottom: 125%;
-            left: 50%;
-            margin-left: -110px;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
-        .nav { text-align: center; margin: 20px 0; font-size: 1.2em; }
+        .nav { text-align: center; margin: 20px 0; font-size: 1.3rem; }
         .nav a { margin: 0 20px; color: #0077b6; text-decoration: none; }
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .day {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px;
+            min-height: 120px;
+        }
+        .day-header { font-weight: bold; text-align: center; background: #f0f8ff; padding: 10px; border-radius: 6px; }
+        .day-number { font-size: 1.4rem; text-align: center; margin-bottom: 6px; }
+        .available { background: #e6ffe6; border-color: #b3ffb3; }
+        .booked   { background: #ffe6e6; border-color: #ffb3b3; }
+        .partial  { background: #fff3cd; border-color: #ffecb3; }
+        .room-list { font-size: 0.9rem; margin-top: 6px; }
+        .other-month { opacity: 0.5; }
     </style>
 </head>
 <body>
 
-<h1>Room Availability Calendar - ${yearMonth}</h1>
+<h1>Room Availability - <fmt:formatDate value="${firstDayOfMonth}" pattern="MMMM yyyy"/></h1>
 
 <div class="nav">
-    <a href="?month=${yearMonth.minusMonths(1)}">&lt; Previous Month</a>
-    <a href="?month=${YearMonth.now()}">Current Month</a>
-    <a href="?month=${yearMonth.plusMonths(1)}">Next Month &gt;</a>
+    <a href="?month=${yearMonth.minusMonths(1)}">&lt; Previous</a>
+    <strong><fmt:formatDate value="${firstDayOfMonth}" pattern="MMMM yyyy"/></strong>
+    <a href="?month=${yearMonth.plusMonths(1)}">Next &gt;</a>
 </div>
 
-<table class="calendar">
-    <thead>
-    <tr>
-        <th>Room</th>
-        <c:forEach var="day" begin="1" end="${daysInMonth}">
-            <th class="day-header">${day}</th>
-        </c:forEach>
-    </tr>
-    </thead>
-    <tbody>
-    <c:forEach var="room" items="${rooms}">
-        <tr>
-            <td style="font-weight:bold; background:#f1f3f5;">${room.type} - ${room.roomNumber}</td>
-            <c:forEach var="day" begin="1" end="${daysInMonth}">
-                <%
-                    LocalDate currentDate = yearMonth.atDay(day);
-                    Integer roomId = room.getId();
-                    List<LocalDate> occupiedDates = occupancy.get(roomId);
-                    String statusClass = "available";
-                    String tooltip = "Available";
+<div class="calendar">
+    <!-- Weekday headers -->
+    <div class="day-header">Sun</div>
+    <div class="day-header">Mon</div>
+    <div class="day-header">Tue</div>
+    <div class="day-header">Wed</div>
+    <div class="day-header">Thu</div>
+    <div class="day-header">Fri</div>
+    <div class="day-header">Sat</div>
 
-                    if (occupiedDates != null && occupiedDates.contains(currentDate)) {
-                        statusClass = "booked";
-                        tooltip = "Booked";
-                        // Could fetch more details here if needed (guest name, nights, etc.)
-                    }
-                %>
-                <td class="<%=statusClass%> tooltip">
-                    <div class="day-number"><%=day%></div>
-                    <span class="tooltiptext"><%=tooltip%></span>
-                </td>
+    <c:forEach var="date" items="${calendarDays}">
+        <c:set var="rooms" value="${availability[date]}" />
+        <c:set var="isCurrentMonth" value="${date.month == yearMonth.month}" />
+
+        <!-- Determine day class using choose/when (no streams in EL) -->
+        <c:set var="dayClass" value="available" />
+        <c:if test="${not empty rooms and not empty rooms}">
+            <c:set var="hasAvailable" value="false" />
+            <c:set var="allAvailable" value="true" />
+
+            <c:forEach var="room" items="${rooms}">
+                <c:if test="${room.status eq 'available'}">
+                    <c:set var="hasAvailable" value="true" />
+                </c:if>
+                <c:if test="${room.status ne 'available'}">
+                    <c:set var="allAvailable" value="false" />
+                </c:if>
             </c:forEach>
-        </tr>
-    </c:forEach>
-    </tbody>
-</table>
 
-<div style="text-align:center; margin-top:30px;">
-    <a href="dashboard">Back to Dashboard</a>
+            <c:choose>
+                <c:when test="${allAvailable}">
+                    <c:set var="dayClass" value="available" />
+                </c:when>
+                <c:when test="${hasAvailable}">
+                    <c:set var="dayClass" value="partial" />
+                </c:when>
+                <c:otherwise>
+                    <c:set var="dayClass" value="booked" />
+                </c:otherwise>
+            </c:choose>
+        </c:if>
+
+        <div class="day ${dayClass} ${!isCurrentMonth ? 'other-month' : ''}">
+                ${date.dayOfMonth}
+
+            <c:if test="${not empty rooms}">
+                <div class="room-list">
+                    <c:forEach var="room" items="${rooms}">
+                        <div>${room.roomId} (${room.roomType}) - ${room.status}</div>
+                    </c:forEach>
+                </div>
+            </c:if>
+        </div>
+    </c:forEach>
 </div>
+
+<a href="dashboard" style="display:block; text-align:center; margin-top:40px;">Back to Dashboard</a>
 
 </body>
 </html>

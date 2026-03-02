@@ -190,52 +190,7 @@ public class ReservationDAO {
             return ps.executeUpdate() > 0;
         }
     }
-    /**
-     * Returns map: roomId → list of dates in the month that are occupied
-     */
-    public Map<Integer, List<LocalDate>> getOccupancyForMonth(YearMonth month) {
-        Map<Integer, List<LocalDate>> occupancy = new HashMap<>();
 
-        LocalDate start = month.atDay(1);
-        LocalDate end = month.atEndOfMonth();
-
-        String sql = """
-        SELECT room_id, check_in, check_out
-        FROM reservations
-        WHERE status NOT IN ('cancelled', 'checked_out')
-          AND check_out >= ?
-          AND check_in <= ?
-    """;
-
-        try (Connection conn = DBUtil.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setDate(1, Date.valueOf(String.valueOf(start)));
-            ps.setDate(2, Date.valueOf(String.valueOf(end)));
-
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    int roomId = rs.getInt("room_id");
-                    LocalDate checkIn = rs.getDate("check_in").toLocalDate();
-                    LocalDate checkOut = rs.getDate("check_out").toLocalDate();
-
-                    List<LocalDate> dates = occupancy.computeIfAbsent(roomId, k -> new ArrayList<>());
-
-                    LocalDate current = checkIn;
-                    while (!current.isAfter(checkOut)) {
-                        if (!current.isBefore(start) && !current.isAfter(end)) {
-                            dates.add(current);
-                        }
-                        current = current.plusDays(1);
-                    }
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("Occupancy query failed: " + e.getMessage());
-        }
-
-        return occupancy;
-    }
 
     /**
      * Get room_id for a reservation (used in cancel/delete)

@@ -1,8 +1,7 @@
 package com.hotel.servlet;
 
 import com.hotel.dao.RoomDAO;
-import com.hotel.dao.ReservationDAO;
-import com.hotel.model.Room;
+import com.hotel.dto.RoomAvailabilityDTO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -13,18 +12,16 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.YearMonth;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Date;               // ← added
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @WebServlet("/room-availability")
-public class RoomAvailabilityServlet<Room> extends HttpServlet {
+public class RoomAvailabilityServlet extends HttpServlet {
 
     private final RoomDAO roomDAO = new RoomDAO();
-    private final ReservationDAO reservationDAO = new ReservationDAO();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -34,31 +31,43 @@ public class RoomAvailabilityServlet<Room> extends HttpServlet {
             return;
         }
 
-        // Get month parameter or default to current
+        // Get month/year from param or default to current
         String monthParam = req.getParameter("month");
         YearMonth yearMonth;
-
-        if (monthParam != null && !monthParam.isEmpty()) {
-            try {
-                yearMonth = YearMonth.parse(monthParam, DateTimeFormatter.ofPattern("yyyy-MM"));
-            } catch (DateTimeParseException e) {
-                yearMonth = YearMonth.now();
-            }
-        } else {
+        try {
+            yearMonth = monthParam != null ? YearMonth.parse(monthParam) : YearMonth.now();
+        } catch (Exception e) {
             yearMonth = YearMonth.now();
         }
 
-        // Get all rooms
-        List<Room> rooms = roomDAO.findAllRooms();  // you need this method
+        // Convert first day of month to old java.util.Date for <fmt:formatDate>
+        LocalDate firstOfMonth = yearMonth.atDay(1);
+        Date firstDayAsDate = Date.from(firstOfMonth.atStartOfDay(ZoneId.systemDefault()).toInstant());
 
-        // Get occupancy map: roomId → list of reserved dates in this month
-        Map<Integer, List<LocalDate>> occupancy = reservationDAO.getOccupancyForMonth(yearMonth);
+        LocalDate lastOfMonth = yearMonth.atEndOfMonth();
 
-        req.setAttribute("yearMonth", yearMonth);
-        req.setAttribute("rooms", rooms);
-        req.setAttribute("occupancy", occupancy);
-        req.setAttribute("daysInMonth", yearMonth.lengthOfMonth());
-        req.setAttribute("firstDayOfMonth", yearMonth.atDay(1).getDayOfWeek().getValue()); // 1 = Monday, 7 = Sunday
+        // Get availability for the whole month
+        Map<LocalDate, List<RoomAvailabilityDTO>> availability =
+                roomDAO.getAvailabilityByDateRange(firstOfMonth, lastOfMonth, null); // null = all types
+
+        // Prepare calendar structure
+        List<LocalDate> calendarDays = new ArrayList<>();
+        // Add padding days (previous month) to start on correct weekday
+        int dayOfWeek = firstOfMonth.getDayOfWeek().getValue() % 7; // 1=Mon, 7=Sun → adjust for Sunday start
+        LocalDate startPadding = firstOfMonth.minusDays(dayOfWeek);
+        for (int i = 0; i < dayOfWeek; i++) {
+            calendarDays.add(startPadding.plusDays(i));
+        }
+        // Add actual month days
+        for (int day = 1; day <= yearMonth.lengthOfMonth(); day++) {
+            calendarDays.add(yearMonth.atDay(day));
+        }
+
+        req.setAttribute("yearMonth", yearMonth);          // keep for navigation
+        req.setAttribute("firstDayOfMonth", firstDayAsDate); // ← new attribute for <fmt:formatDate>
+        req.setAttribute("calendarDays", calendarDays);
+        req.setAttribute("availability", availability);
+        req.setAttribute("roomTypes", roomDAO.getAllRoomTypes());
 
         req.getRequestDispatcher("/room-availability.jsp").forward(req, resp);
     }
