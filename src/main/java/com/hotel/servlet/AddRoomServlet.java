@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
+import java.sql.SQLException;
 
 @WebServlet("/add-room")
 public class AddRoomServlet extends HttpServlet {
@@ -46,8 +47,10 @@ public class AddRoomServlet extends HttpServlet {
                     resp.sendRedirect("manage-rooms");
                     return;
                 } else {
-                    req.setAttribute("error", "Failed to add room. (Check if Room ID already exists)");
+                    req.setAttribute("error", "Failed to add room. (No rows affected)");
                 }
+            } catch (SQLException e) {
+                req.setAttribute("error", "Database error: " + e.getMessage());
             } catch (NumberFormatException e) {
                 req.setAttribute("error", "Invalid number format for Room ID or Rate.");
             }
