@@ -440,8 +440,10 @@
                     <td>
                         <div class="action-links">
                             <a href="update-reservation?id=${res.id}" class="action-link" title="Update"><i class="fas fa-edit"></i></a>
-                            <a href="cancel-reservation?id=${res.id}" class="action-link" title="Cancel"><i class="fas fa-times-circle"></i></a>
-                            <a href="delete-reservation?confirm=${res.id}" class="action-link delete" title="Delete"><i class="fas fa-trash-alt"></i></a>
+                            <c:if test="${user.role eq 'admin'}">
+                                <a href="cancel-reservation?id=${res.id}" class="action-link" title="Cancel"><i class="fas fa-times-circle"></i></a>
+                                <a href="delete-reservation?confirm=${res.id}" class="action-link delete" title="Delete"><i class="fas fa-trash-alt"></i></a>
+                            </c:if>
                         </div>
                     </td>
                 </tr>

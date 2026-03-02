@@ -261,7 +261,9 @@
             <h2>Room Management</h2>
             <p style="color: var(--text-muted); font-size: 14px;">Inventory overview and room service control</p>
         </div>
-        <a href="add-room" class="btn-add"><i class="fas fa-plus"></i> Add New Room</a>
+        <c:if test="${user.role eq 'admin'}">
+            <a href="add-room" class="btn-add"><i class="fas fa-plus"></i> Add New Room</a>
+        </c:if>
     </div>
 
     <div class="msg-container">
