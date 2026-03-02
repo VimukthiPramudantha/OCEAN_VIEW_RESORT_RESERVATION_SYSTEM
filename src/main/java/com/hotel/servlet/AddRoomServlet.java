@@ -33,21 +33,23 @@ public class AddRoomServlet extends HttpServlet {
             return;
         }
 
+        String roomIdStr = req.getParameter("roomNumber");
         String type = req.getParameter("type");
         String rateStr = req.getParameter("rate");
 
-        if (type != null && rateStr != null) {
+        if (roomIdStr != null && type != null && rateStr != null) {
             try {
+                int roomId = Integer.parseInt(roomIdStr);
                 double rate = Double.parseDouble(rateStr);
-                if (roomDAO.addRoom(type, rate)) {
-                    session.setAttribute("successMsg", "New room added successfully.");
+                if (roomDAO.addRoom(roomId, type, rate)) {
+                    session.setAttribute("successMsg", "New room #" + roomId + " added successfully.");
                     resp.sendRedirect("manage-rooms");
                     return;
                 } else {
-                    req.setAttribute("error", "Failed to add room.");
+                    req.setAttribute("error", "Failed to add room. (Check if Room ID already exists)");
                 }
             } catch (NumberFormatException e) {
-                req.setAttribute("error", "Invalid rate format.");
+                req.setAttribute("error", "Invalid number format for Room ID or Rate.");
             }
         } else {
             req.setAttribute("error", "All fields are required.");

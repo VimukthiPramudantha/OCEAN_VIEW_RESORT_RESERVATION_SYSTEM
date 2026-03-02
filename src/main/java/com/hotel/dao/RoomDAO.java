@@ -256,14 +256,15 @@ public class RoomDAO { // ← Removed incorrect generic <RoomAvailabilityDTO>
     }
 
     /**
-     * Adds a new room to the system.
+     * Adds a new room to the system with a manual Room ID.
      */
-    public boolean addRoom(String type, double rate) {
-        String sql = "INSERT INTO rooms (type, rate_per_night, status) VALUES (?, ?, 'available')";
+    public boolean addRoom(int roomId, String type, double rate) {
+        String sql = "INSERT INTO rooms (room_id, type, rate_per_night, status) VALUES (?, ?, ?, 'available')";
         try (Connection conn = DBUtil.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, type);
-            ps.setDouble(2, rate);
+            ps.setInt(1, roomId);
+            ps.setString(2, type);
+            ps.setDouble(3, rate);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("Error adding room: " + e.getMessage());

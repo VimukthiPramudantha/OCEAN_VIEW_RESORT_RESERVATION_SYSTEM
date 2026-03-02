@@ -140,6 +140,10 @@
 
         <form action="add-room" method="post">
             <div class="form-group">
+                <label>Room Number</label>
+                <input type="number" name="roomNumber" placeholder="e.g. 101" required>
+            </div>
+            <div class="form-group">
                 <label>Room Type</label>
                 <select name="type">
                     <option value="Single">Single</option>
