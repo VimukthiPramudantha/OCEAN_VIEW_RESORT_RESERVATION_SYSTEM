@@ -273,17 +273,14 @@ public class RoomDAO { // ← Removed incorrect generic <RoomAvailabilityDTO>
     /**
      * Updates the status of a specific room.
      */
-    public boolean updateRoomStatus(int roomId, String status) {
+    public boolean updateRoomStatus(int roomId, String status) throws SQLException {
         String sql = "UPDATE rooms SET status = ? WHERE room_id = ?";
         try (Connection conn = DBUtil.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, status);
             ps.setInt(2, roomId);
             return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
-            System.err.println("Error updating room status: " + e.getMessage());
         }
-        return false;
     }
 
     /**

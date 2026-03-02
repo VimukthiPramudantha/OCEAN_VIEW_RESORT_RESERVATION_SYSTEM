@@ -105,26 +105,34 @@ public class CheckoutServlet extends HttpServlet {
             if (nights <= 0)
                 nights = 1;
 
+            // 1. Update reservation status to 'checked_out'
             try (PreparedStatement psStatus = conn.prepareStatement(updateStatusSql)) {
                 psStatus.setInt(1, reservationId);
                 psStatus.executeUpdate();
+            } catch (SQLException e) {
+                throw new SQLException("Error updating reservation status: " + e.getMessage());
             }
 
             // 2. Save detailed checkout record
-            com.hotel.model.Checkout checkoutRecord = new com.hotel.model.Checkout();
-            checkoutRecord.setReservationId(reservationId);
-            checkoutRecord.setServiceCharge(serviceCharge);
-            checkoutRecord.setTax(tax);
-            checkoutRecord.setAdditionalCharges(additionalCharges);
-            checkoutRecord.setTotalAmount(totalAmount);
-
-            new com.hotel.dao.CheckoutDAO().save(checkoutRecord, conn);
+            try {
+                com.hotel.model.Checkout checkoutRecord = new com.hotel.model.Checkout();
+                checkoutRecord.setReservationId(reservationId);
+                checkoutRecord.setServiceCharge(serviceCharge);
+                checkoutRecord.setTax(tax);
+                checkoutRecord.setAdditionalCharges(additionalCharges);
+                checkoutRecord.setTotalAmount(totalAmount);
+                new com.hotel.dao.CheckoutDAO().save(checkoutRecord, conn);
+            } catch (SQLException e) {
+                throw new SQLException("Error saving checkout record: " + e.getMessage());
+            }
 
             // 3. Set the room to 'cleaning' status
             String updateRoomSql = "UPDATE rooms SET status = 'cleaning' WHERE room_id = ?";
             try (PreparedStatement psRoom = conn.prepareStatement(updateRoomSql)) {
                 psRoom.setInt(1, reservation.getRoomId());
                 psRoom.executeUpdate();
+            } catch (SQLException e) {
+                throw new SQLException("Error updating room status: " + e.getMessage());
             }
 
             conn.commit();

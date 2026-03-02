@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.List;
 
 @WebServlet("/manage-rooms")
@@ -44,8 +45,15 @@ public class RoomManagementServlet extends HttpServlet {
         if (roomIdStr != null && status != null) {
             try {
                 int roomId = Integer.parseInt(roomIdStr);
-                roomDAO.updateRoomStatus(roomId, status);
-                session.setAttribute("successMsg", "Room status updated successfully.");
+                if (roomDAO.updateRoomStatus(roomId, status)) {
+                    session.setAttribute("successMsg", "Room status updated successfully.");
+                    resp.sendRedirect("manage-rooms");
+                    return;
+                } else {
+                    req.setAttribute("error", "Failed to update room status.");
+                }
+            } catch (SQLException e) {
+                req.setAttribute("error", "Database error: " + e.getMessage());
             } catch (NumberFormatException e) {
                 req.setAttribute("error", "Invalid Room ID.");
             }
