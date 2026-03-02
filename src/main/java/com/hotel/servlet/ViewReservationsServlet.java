@@ -15,18 +15,24 @@ import java.sql.Date;
 import java.util.List;
 
 @WebServlet("/view-reservations")
-public class ViewReservationsServlet extends SecureServlet {
+public class ViewReservationsServlet extends HttpServlet {
 
     private final ReservationDAO reservationDAO = new ReservationDAO();
 
     @Override
-    protected void doSecureGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        // Optional date filters
-        String startStr = trimOrNull(req.getParameter("startDate"));
-        String endStr = trimOrNull(req.getParameter("endDate"));
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        HttpSession session = req.getSession(false);
+        if (session == null || session.getAttribute("user") == null) {
+            resp.sendRedirect("login");
+            return;
+        }
 
-        Date start = startStr != null ? Date.valueOf(startStr) : null;
-        Date end = endStr != null ? Date.valueOf(endStr) : null;
+        // Optional date filters
+        String startStr = req.getParameter("startDate");
+        String endStr = req.getParameter("endDate");
+
+        Date start = startStr != null && !startStr.isEmpty() ? Date.valueOf(startStr) : null;
+        Date end = endStr != null && !endStr.isEmpty() ? Date.valueOf(endStr) : null;
 
         List<ReservationDisplayDTO> reservations;
 
@@ -40,6 +46,6 @@ public class ViewReservationsServlet extends SecureServlet {
         req.setAttribute("startDate", startStr);
         req.setAttribute("endDate", endStr);
 
-        forward(req, resp, "/view-reservations.jsp");
+        req.getRequestDispatcher("/view-reservations.jsp").forward(req, resp);
     }
 }

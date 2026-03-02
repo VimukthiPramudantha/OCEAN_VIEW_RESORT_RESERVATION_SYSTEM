@@ -1,16 +1,27 @@
 package com.hotel.dao;
 
-import java.sql.*;
+import com.hotel.config.DBUtil;
 
-public class RoomDAO extends BaseDAO {
+import java.sql.*;
+import java.util.ArrayList;
+
+public class RoomDAO {
 
     /**
      * Counts total number of rooms in the system (all types, all statuses)
      */
     public int countTotalRooms() {
         String sql = "SELECT COUNT(*) FROM rooms";
-        Integer count = querySingle(sql, rs -> rs.getInt(1));
-        return count != null ? count : 0;
+        try (Connection conn = DBUtil.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error counting total rooms: " + e.getMessage());
+        }
+        return 0;
     }
 
     /**
@@ -18,8 +29,39 @@ public class RoomDAO extends BaseDAO {
      */
     public int countBookedRooms() {
         String sql = "SELECT COUNT(*) FROM rooms WHERE status = 'booked'";
-        Integer count = querySingle(sql, rs -> rs.getInt(1));
-        return count != null ? count : 0;
+        try (Connection conn = DBUtil.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error counting booked rooms: " + e.getMessage());
+        }
+        return 0;
+    }
+
+    public <Room> List<Room> findAllRooms() {
+        List<Room> list = new List<Room>();
+        String sql = "SELECT * FROM rooms ORDER BY type, room_number";
+
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                Room r = new Room();
+                r.setId(rs.getInt("room_id"));
+                r.setRoomNumber(rs.getString("room_number"));
+                r.setType(rs.getString("type"));
+                r.setStatus(rs.getString("status"));
+                r.setRatePerNight(rs.getDouble("rate_per_night"));
+                list.add(r);
+            }
+        } catch (SQLException e) {
+            System.err.println("Failed to fetch all rooms: " + e.getMessage());
+        }
+        return list;
     }
 
     /**
@@ -45,13 +87,36 @@ public class RoomDAO extends BaseDAO {
                     LIMIT 1
                 """;
 
-        Integer id = querySingle(sql, rs -> rs.getInt("room_id"),
-                checkOut, checkIn, checkOut, checkIn, checkIn, checkOut, roomType);
-        return id != null ? id : -1;
+        try (Connection conn = DBUtil.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setDate(1, checkOut);
+            ps.setDate(2, checkIn);
+            ps.setDate(3, checkOut);
+            ps.setDate(4, checkIn);
+            ps.setDate(5, checkIn);
+            ps.setDate(6, checkOut);
+            ps.setString(7, roomType);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("room_id");
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Date-range availability check failed: " + e.getMessage());
+        }
+
+        return -1; // No available room in the period
     }
 
     /**
      * Finds the first currently available room of the given type (ignores dates).
+     * Use this only for non-booking flows (e.g. dashboard "available now" display).
+     * Returns null if no room is currently available.
+     *
+     * WARNING: This method DOES NOT check future bookings → do NOT use it for
+     * actual reservations!
      */
     public Integer findAvailableRoomId(String roomType) {
         String sql = """
@@ -61,7 +126,22 @@ public class RoomDAO extends BaseDAO {
                       AND status = 'available'
                     LIMIT 1
                 """;
-        return querySingle(sql, rs -> rs.getInt("room_id"), roomType);
+
+        try (Connection conn = DBUtil.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, roomType);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("room_id");
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Current availability check failed: " + e.getMessage());
+        }
+
+        return null; // No currently available room
     }
 
     /**
@@ -69,11 +149,15 @@ public class RoomDAO extends BaseDAO {
      */
     public boolean markAsAvailable(int roomId, Connection conn) throws SQLException {
         String sql = "UPDATE rooms SET status = 'available' WHERE room_id = ?";
-        return update(sql, conn, roomId) > 0;
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, roomId);
+            return ps.executeUpdate() > 0;
+        }
     }
 
     /**
      * Marks the room as booked using provided connection (for transaction)
+     * Returns true if updated successfully
      */
     public boolean markAsBooked(int roomId, Connection conn) throws SQLException {
         String sql = """
@@ -81,15 +165,32 @@ public class RoomDAO extends BaseDAO {
                     SET status = 'booked'
                     WHERE room_id = ? AND status = 'available'
                 """;
-        return update(sql, conn, roomId) > 0;
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, roomId);
+            int rows = ps.executeUpdate();
+            return rows > 0; // true only if it was available and updated
+        }
     }
 
     /**
      * Returns the standard rate per night for the given room type.
+     * Returns 0.0 on failure (consider throwing exception in production).
      */
     public double getRateForType(String roomType) {
         String sql = "SELECT rate_per_night FROM rooms WHERE type = ? LIMIT 1";
-        Double rate = querySingle(sql, rs -> rs.getDouble("rate_per_night"), roomType);
-        return rate != null ? rate : 0.0;
+        try (Connection conn = DBUtil.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, roomType);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getDouble("rate_per_night");
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Rate lookup failed for type " + roomType + ": " + e.getMessage());
+        }
+        return 0.0;
     }
 }

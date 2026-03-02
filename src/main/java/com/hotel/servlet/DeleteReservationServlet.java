@@ -15,27 +15,39 @@ import java.io.IOException;
 import java.util.List;
 
 @WebServlet("/delete-reservation")
-public class DeleteReservationServlet extends SecureServlet {
+public class DeleteReservationServlet extends HttpServlet {
 
     private final ReservationDAO reservationDAO = new ReservationDAO();
     private final GuestDAO guestDAO = new GuestDAO();
 
     @Override
-    protected void doSecureGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        HttpSession session = req.getSession(false);
+        if (session == null || session.getAttribute("user") == null) {
+            resp.sendRedirect("login");
+            return;
+        }
+
         List<ReservationDisplayDTO> reservations = reservationDAO.findAll();
         req.setAttribute("reservations", reservations);
 
-        forward(req, resp, "/delete-reservation.jsp");
+        req.getRequestDispatcher("/delete-reservation.jsp").forward(req, resp);
     }
 
     @Override
-    protected void doSecurePost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        HttpSession session = req.getSession(false);
+        if (session == null || session.getAttribute("user") == null) {
+            resp.sendRedirect("login");
+            return;
+        }
+
         String action = req.getParameter("action");
 
         if ("confirm_delete".equals(action)) {
             try {
                 int reservationId = Integer.parseInt(req.getParameter("reservationId"));
-                String typedGuestName = trimOrNull(req.getParameter("confirmGuestName"));
+                String typedGuestName = req.getParameter("confirmGuestName").trim();
 
                 ReservationDisplayDTO res = reservationDAO.findById(reservationId);
                 if (res == null) {
@@ -46,8 +58,7 @@ public class DeleteReservationServlet extends SecureServlet {
 
                 String realGuestName = guestDAO.getGuestNameById(res.getGuestId());
 
-                if (realGuestName == null || typedGuestName == null
-                        || !realGuestName.trim().equalsIgnoreCase(typedGuestName)) {
+                if (realGuestName == null || !realGuestName.trim().equalsIgnoreCase(typedGuestName)) {
                     req.setAttribute("error", "Guest name does not match. Deletion cancelled.");
                     forwardToList(req, resp);
                     return;
@@ -55,8 +66,7 @@ public class DeleteReservationServlet extends SecureServlet {
 
                 boolean deleted = reservationDAO.delete(reservationId);
                 if (deleted) {
-                    req.getSession().setAttribute("successMsg",
-                            "Reservation #" + reservationId + " deleted successfully.");
+                    session.setAttribute("successMsg", "Reservation #" + reservationId + " deleted successfully.");
                 } else {
                     req.setAttribute("error", "Failed to delete reservation.");
                 }
@@ -71,6 +81,6 @@ public class DeleteReservationServlet extends SecureServlet {
     private void forwardToList(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         List<ReservationDisplayDTO> reservations = reservationDAO.findAll();
         req.setAttribute("reservations", reservations);
-        forward(req, resp, "/delete-reservation.jsp");
+        req.getRequestDispatcher("/delete-reservation.jsp").forward(req, resp);
     }
 }

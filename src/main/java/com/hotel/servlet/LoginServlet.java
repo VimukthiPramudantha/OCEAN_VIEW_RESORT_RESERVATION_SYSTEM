@@ -12,18 +12,19 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 
 @WebServlet("/login")
-public class LoginServlet extends BaseServlet {
+public class LoginServlet extends HttpServlet {
 
     private final UserDAO userDAO = new UserDAO();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         // If already logged in → redirect to dashboard
-        if (req.getSession(false) != null && req.getSession().getAttribute("user") != null) {
-            redirect(resp, "dashboard");
+        HttpSession session = req.getSession(false);
+        if (session != null && session.getAttribute("user") != null) {
+            resp.sendRedirect("dashboard");
             return;
         }
-        forward(req, resp, "/login.jsp");
+        req.getRequestDispatcher("/login.jsp").forward(req, resp);
     }
 
     @Override
@@ -31,8 +32,10 @@ public class LoginServlet extends BaseServlet {
         String username = req.getParameter("username");
         String password = req.getParameter("password");
 
+        // Basic server-side validation (add more later)
         if (username == null || username.trim().isEmpty() || password == null || password.trim().isEmpty()) {
-            handleError(req, resp, "Username and password are required", "/login.jsp");
+            req.setAttribute("error", "Username and password are required");
+            req.getRequestDispatcher("/login.jsp").forward(req, resp);
             return;
         }
 
@@ -41,10 +44,14 @@ public class LoginServlet extends BaseServlet {
         if (user != null) {
             HttpSession session = req.getSession();
             session.setAttribute("user", user);
-            session.setMaxInactiveInterval(30 * 60);
-            redirect(resp, "dashboard");
+            session.setMaxInactiveInterval(30 * 60); // 30 minutes timeout
+
+            // Optional: log last login time (update DB)
+
+            resp.sendRedirect("dashboard.jsp");
         } else {
-            handleError(req, resp, "Invalid username or password", "/login.jsp");
+            req.setAttribute("error", "Invalid username or password");
+            req.getRequestDispatcher("/login.jsp").forward(req, resp);
         }
     }
 }

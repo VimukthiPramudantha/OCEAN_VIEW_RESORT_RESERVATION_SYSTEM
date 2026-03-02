@@ -17,21 +17,28 @@ import java.sql.SQLException;
 import java.time.temporal.ChronoUnit;
 
 @WebServlet("/checkout")
-public class CheckoutServlet extends SecureServlet {
+public class CheckoutServlet extends HttpServlet {
 
     private final ReservationDAO reservationDAO = new ReservationDAO();
 
     @Override
-    protected void doSecureGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        HttpSession session = req.getSession(false);
+        if (session == null || session.getAttribute("user") == null) {
+            resp.sendRedirect("login");
+            return;
+        }
+
         String resNumber = req.getParameter("resNumber");
-        if (isBlank(resNumber)) {
-            redirect(resp, "reservation-search");
+        if (resNumber == null || resNumber.trim().isEmpty()) {
+            resp.sendRedirect("reservation-search");
             return;
         }
 
         ReservationDisplayDTO reservation = reservationDAO.findByReservationNumber(resNumber);
         if (reservation == null) {
-            handleError(req, resp, "Reservation not found.", "/reservation-search.jsp");
+            req.setAttribute("error", "Reservation not found.");
+            req.getRequestDispatcher("/reservation-search.jsp").forward(req, resp);
             return;
         }
 
@@ -47,14 +54,20 @@ public class CheckoutServlet extends SecureServlet {
         req.setAttribute("nights", nights);
         req.setAttribute("totalBill", totalBill);
 
-        forward(req, resp, "/checkout.jsp");
+        req.getRequestDispatcher("/checkout.jsp").forward(req, resp);
     }
 
     @Override
-    protected void doSecurePost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        HttpSession session = req.getSession(false);
+        if (session == null || session.getAttribute("user") == null) {
+            resp.sendRedirect("login");
+            return;
+        }
+
         String reservationIdStr = req.getParameter("reservationId");
-        if (isBlank(reservationIdStr)) {
-            redirect(resp, "reservation-search");
+        if (reservationIdStr == null || reservationIdStr.isEmpty()) {
+            resp.sendRedirect("reservation-search");
             return;
         }
 
@@ -62,7 +75,7 @@ public class CheckoutServlet extends SecureServlet {
         ReservationDisplayDTO reservation = reservationDAO.findById(reservationId);
 
         if (reservation == null) {
-            redirect(resp, "reservation-search");
+            resp.sendRedirect("reservation-search");
             return;
         }
 
@@ -70,6 +83,9 @@ public class CheckoutServlet extends SecureServlet {
         try {
             conn = DBUtil.getConnection();
             conn.setAutoCommit(false);
+
+            // 1. Update reservation status to 'checked_out'
+            String updateStatusSql = "UPDATE reservations SET status = 'checked_out' WHERE reservation_id = ?";
 
             // Capture billing adjustments
             double serviceCharge = req.getParameter("serviceCharge") != null
@@ -89,9 +105,9 @@ public class CheckoutServlet extends SecureServlet {
             if (nights <= 0)
                 nights = 1;
 
-            // 1. Update reservation status
-            if (!reservationDAO.updateStatus(reservationId, "checked_out", conn)) {
-                throw new SQLException("Failed to update reservation status");
+            try (PreparedStatement psStatus = conn.prepareStatement(updateStatusSql)) {
+                psStatus.setInt(1, reservationId);
+                psStatus.executeUpdate();
             }
 
             // 2. Save detailed checkout record
@@ -105,9 +121,10 @@ public class CheckoutServlet extends SecureServlet {
             new com.hotel.dao.CheckoutDAO().save(checkoutRecord, conn);
 
             // 3. Free the room
-            com.hotel.dao.RoomDAO roomDAO = new com.hotel.dao.RoomDAO();
-            if (!roomDAO.markAsAvailable(reservation.getRoomId(), conn)) {
-                throw new SQLException("Failed to mark room as available");
+            String updateRoomSql = "UPDATE rooms SET status = 'available' WHERE room_id = ?";
+            try (PreparedStatement psRoom = conn.prepareStatement(updateRoomSql)) {
+                psRoom.setInt(1, reservation.getRoomId());
+                psRoom.executeUpdate();
             }
 
             conn.commit();
@@ -120,7 +137,7 @@ public class CheckoutServlet extends SecureServlet {
             req.setAttribute("tax", tax);
             req.setAttribute("additionalCharges", additionalCharges);
 
-            forward(req, resp, "/checkout-success.jsp");
+            req.getRequestDispatcher("/checkout-success.jsp").forward(req, resp);
 
         } catch (SQLException e) {
             if (conn != null) {
@@ -131,7 +148,8 @@ public class CheckoutServlet extends SecureServlet {
                 }
             }
             e.printStackTrace();
-            handleError(req, resp, "Checkout failed: " + e.getMessage(), "/checkout.jsp");
+            req.setAttribute("error", "Checkout failed: " + e.getMessage());
+            req.getRequestDispatcher("/checkout.jsp").forward(req, resp);
         } finally {
             if (conn != null) {
                 try {

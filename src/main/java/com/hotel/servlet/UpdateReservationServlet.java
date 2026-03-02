@@ -16,22 +16,28 @@ import java.sql.Date;
 import java.util.List;
 
 @WebServlet("/update-reservation")
-public class UpdateReservationServlet extends SecureServlet {
+public class UpdateReservationServlet extends HttpServlet {
 
     private final ReservationDAO reservationDAO = new ReservationDAO();
     private final RoomDAO roomDAO = new RoomDAO();
 
     @Override
-    protected void doSecureGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        HttpSession session = req.getSession(false);
+        if (session == null || session.getAttribute("user") == null) {
+            resp.sendRedirect("login");
+            return;
+        }
+
         String idStr = req.getParameter("id");
-        if (!isBlank(idStr)) {
+        if (idStr != null && !idStr.isEmpty()) {
             // Edit mode: load one reservation for editing
             try {
                 int id = Integer.parseInt(idStr);
                 ReservationDisplayDTO res = reservationDAO.findById(id);
                 if (res != null) {
                     req.setAttribute("reservation", res);
-                    forward(req, resp, "/update-reservation.jsp");
+                    req.getRequestDispatcher("/update-reservation.jsp").forward(req, resp);
                     return;
                 } else {
                     req.setAttribute("error", "Reservation #" + id + " not found.");
@@ -42,13 +48,21 @@ public class UpdateReservationServlet extends SecureServlet {
         }
 
         // Default: show list of reservations to choose from
-        forwardToList(req, resp);
+        List<ReservationDisplayDTO> reservations = reservationDAO.findActiveForUpdate();
+        req.setAttribute("reservations", reservations);
+        req.getRequestDispatcher("/update-reservation-list.jsp").forward(req, resp);
     }
 
     @Override
-    protected void doSecurePost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        HttpSession session = req.getSession(false);
+        if (session == null || session.getAttribute("user") == null) {
+            resp.sendRedirect("login");
+            return;
+        }
+
         String idStr = req.getParameter("reservationId");
-        if (isBlank(idStr)) {
+        if (idStr == null || idStr.trim().isEmpty()) {
             req.setAttribute("error", "Reservation ID is missing.");
             forwardToList(req, resp);
             return;
@@ -98,14 +112,14 @@ public class UpdateReservationServlet extends SecureServlet {
                     reservationId, specialRequests, adults, children, newCheckIn, newCheckOut);
 
             if (success) {
-                req.getSession().setAttribute("successMsg", "Reservation #" + reservationId + " updated successfully.");
-                redirect(resp, "view-reservations");
+                session.setAttribute("successMsg", "Reservation #" + reservationId + " updated successfully.");
+                resp.sendRedirect("view-reservations");
             } else {
                 req.setAttribute("error", "Failed to update reservation (no changes made or database error).");
                 // Reload the reservation and forward back to the form
                 ReservationDisplayDTO res = reservationDAO.findById(reservationId);
                 req.setAttribute("reservation", res);
-                forward(req, resp, "/update-reservation.jsp");
+                req.getRequestDispatcher("/update-reservation.jsp").forward(req, resp);
             }
 
         } catch (NumberFormatException e) {
@@ -128,12 +142,22 @@ public class UpdateReservationServlet extends SecureServlet {
             req.setAttribute("reservation", res);
         } catch (Exception ignored) {
         }
-        forward(req, resp, "/update-reservation.jsp");
+        req.getRequestDispatcher("/update-reservation.jsp").forward(req, resp);
     }
 
     private void forwardToList(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         List<ReservationDisplayDTO> reservations = reservationDAO.findActiveForUpdate();
         req.setAttribute("reservations", reservations);
-        forward(req, resp, "/update-reservation-list.jsp");
+        req.getRequestDispatcher("/update-reservation-list.jsp").forward(req, resp);
+    }
+
+    private int safeParseInt(String s, int defaultValue) {
+        if (s == null || s.trim().isEmpty())
+            return defaultValue;
+        try {
+            return Integer.parseInt(s.trim());
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
     }
 }
