@@ -50,14 +50,36 @@
 
         .brand h1 { color: var(--primary); font-size: 22px; text-align: center; margin-bottom: 40px; }
 
+        .user-profile {
+            background: rgba(0, 119, 182, 0.05);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+        .user-name {
+            display: block;
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-main);
+        }
+        .user-role {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
         .nav-menu { list-style: none; flex-grow: 1; }
+        .nav-item { margin-bottom: 5px; }
         .nav-link {
             display: flex; align-items: center; padding: 12px 15px; text-decoration: none;
-            color: var(--text-muted); border-radius: 10px; font-size: 14px; margin-bottom: 5px; transition: all 0.3s ease;
+            color: var(--text-muted); border-radius: 10px; font-size: 14px; transition: all 0.3s ease;
         }
         .nav-link i { margin-right: 12px; width: 20px; text-align: center; }
         .nav-link:hover { background: rgba(0, 119, 182, 0.1); color: var(--primary); }
         .nav-link.active { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(0, 119, 182, 0.3); }
+
+        .logout-link { margin-top: auto; color: var(--danger); }
+        .logout-link:hover { background: rgba(230, 57, 70, 0.1); color: var(--danger); }
 
         /* Main Content */
         .main-content {
@@ -177,16 +199,60 @@
 <body>
 
 <aside class="sidebar">
-    <div class="brand"><h1>OCEAN VIEW</h1></div>
+    <div class="brand">
+        <h1>OCEAN VIEW</h1>
+    </div>
+    <div class="user-profile">
+        <span class="user-name">${user.fullName}</span>
+        <span class="user-role">${user.role.toUpperCase()}</span>
+    </div>
     <ul class="nav-menu">
-        <li><a href="dashboard" class="nav-link"><i class="fas fa-chart-line"></i> <span>Dashboard</span></a></li>
+        <li class="nav-item">
+            <a href="dashboard" class="nav-link">
+                <i class="fas fa-chart-line"></i> <span>Dashboard</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="manage-reservations" class="nav-link">
+                <i class="fas fa-calendar-check"></i> <span>Manage Bookings</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="add-reservation" class="nav-link">
+                <i class="fas fa-plus-circle"></i> <span>New Reservation</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="room-availability" class="nav-link">
+                <i class="fas fa-calendar-alt"></i> <span>Room Calendar</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="reservation-search" class="nav-link">
+                <i class="fas fa-search-location"></i> <span>Search & Checkout</span>
+            </a>
+        </li>
         <c:if test="${user.role eq 'admin'}">
-            <li><a href="manage-rooms" class="nav-link active"><i class="fas fa-door-open"></i> <span>Manage Rooms</span></a></li>
-            <li><a href="add-user" class="nav-link"><i class="fas fa-user-plus"></i> <span>Add User</span></a></li>
+            <li class="nav-item">
+                <a href="manage-rooms" class="nav-link active">
+                    <i class="fas fa-door-open"></i> <span>Room Management</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="add-user" class="nav-link">
+                    <i class="fas fa-user-plus"></i> <span>Add User</span>
+                </a>
+            </li>
         </c:if>
-        <li><a href="manage-reservations" class="nav-link"><i class="fas fa-calendar-check"></i> <span>Manage Bookings</span></a></li>
-        <li><a href="room-availability" class="nav-link"><i class="fas fa-calendar-alt"></i> <span>Availability</span></a></li>
+        <li class="nav-item">
+            <a href="help" class="nav-link">
+                <i class="fas fa-question-circle"></i> <span>Portal Help</span>
+            </a>
+        </li>
     </ul>
+    <a href="logout" class="nav-link logout-link">
+        <i class="fas fa-sign-out-alt"></i> <span>Logout Session</span>
+    </a>
 </aside>
 
 <main class="main-content">

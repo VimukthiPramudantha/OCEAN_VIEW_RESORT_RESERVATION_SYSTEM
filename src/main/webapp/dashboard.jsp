@@ -254,18 +254,13 @@
             </a>
         </li>
         <li class="nav-item">
-            <a href="check-availability" class="nav-link">
-                <i class="fas fa-search"></i> <span>Availability</span>
-            </a>
-        </li>
-        <li class="nav-item">
             <a href="room-availability" class="nav-link">
                 <i class="fas fa-calendar-alt"></i> <span>Room Calendar</span>
             </a>
         </li>
         <li class="nav-item">
             <a href="reservation-search" class="nav-link">
-                <i class="fas fa-search-location"></i> <span>Search Reservations</span>
+                <i class="fas fa-search-location"></i> <span>Search & Checkout</span>
             </a>
         </li>
         <c:if test="${user.role eq 'admin'}">

@@ -275,12 +275,10 @@
     <div class="brand">
         <h1>OCEAN VIEW</h1>
     </div>
-
     <div class="user-profile">
         <span class="user-name">${user.fullName}</span>
         <span class="user-role">${user.role.toUpperCase()}</span>
     </div>
-
     <ul class="nav-menu">
         <li class="nav-item">
             <a href="dashboard" class="nav-link">
@@ -298,8 +296,13 @@
             </a>
         </li>
         <li class="nav-item">
-            <a href="check-availability" class="nav-link">
-                <i class="fas fa-search"></i> <span>Availability</span>
+            <a href="room-availability" class="nav-link">
+                <i class="fas fa-calendar-alt"></i> <span>Room Calendar</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="reservation-search" class="nav-link">
+                <i class="fas fa-search-location"></i> <span>Search & Checkout</span>
             </a>
         </li>
         <c:if test="${user.role eq 'admin'}">
@@ -320,7 +323,6 @@
             </a>
         </li>
     </ul>
-
     <a href="logout" class="nav-link logout-link">
         <i class="fas fa-sign-out-alt"></i> <span>Logout Session</span>
     </a>
