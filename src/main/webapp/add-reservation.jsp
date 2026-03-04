@@ -386,7 +386,6 @@
             <p>Register a guest and manage their booking stay</p>
         </div>
 
-        <!-- Progress Indicator -->
         <div class="progress-stepper">
             <div class="progress-step active" id="p1">1 <span class="step-label">Guest Info</span></div>
             <div class="progress-step" id="p2">2 <span class="step-label">Stay Info</span></div>
