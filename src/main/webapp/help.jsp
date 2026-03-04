@@ -39,7 +39,7 @@
 
         /* Sidebar Styling */
         .sidebar {
-            width: 280px;
+            min-width: 240px !important;
             background: var(--sidebar-bg);
             height: 100vh;
             display: flex;
@@ -214,6 +214,7 @@
         .instruction-item {
             padding: 20px;
             margin-bottom: 15px;
+            border: .5px solid #e7e7e7;
             background: rgba(255,255,255,0.5);
             border-radius: 15px;
             border-left: 4px solid var(--primary);
@@ -236,7 +237,7 @@
         /* FAQ Style Support */
         .faq-item {
             margin-bottom: 15px;
-            border: 1px solid #eee;
+            border: 1px solid #b1abab;
             border-radius: 12px;
             padding: 15px;
             background: white;
@@ -329,6 +330,69 @@
                 </tr>
             </tbody>
         </table>
+    </section>
+
+    <!-- Dashboard section -->
+    <section class="guide-section">
+        <h3><i class="fas fa-tachometer-alt"></i> Dashboard & Analytics</h3>
+        <ul class="instruction-list">
+            <li class="instruction-item">
+                <strong>Real-time Occupancy Metrics</strong>
+                <p>The dashboard displays the current percentage of occupied rooms. This is calculated live: (Count of 'Checked In' Reservations / Total Available Rooms) * 100. This data refreshes every time the dashboard is loaded to ensure frontline staff have the most accurate availability data.</p>
+            </li>
+            <li class="instruction-item">
+                <strong>Revenue Performance Indicators</strong>
+                <p>Calculates today's expected revenue based on scheduled checkouts and total billing processed within the current 24-hour cycle (starting 12:00 AM). Note: This includes room rates, service charges, and taxes for all finalized transactions today.</p>
+            </li>
+        </ul>
+    </section>
+
+    <!-- Reservation section -->
+    <section class="guide-section">
+        <h3><i class="fas fa-calendar-alt"></i> Reservation Lifecycle</h3>
+        <ul class="instruction-list">
+            <li class="instruction-item">
+                <strong>New Booking Requirements</strong>
+                <p>When creating a booking, ensure the 'Guest NIC / Passport' field is filled accurately. This is the primary key used to link returning guests to their historical data. The system enforces a check for existing active reservations for the same NIC to prevent duplicate bookings.</p>
+            </li>
+            <li class="instruction-item">
+                <strong>Formal Check-In Protocol</strong>
+                <p>A guest must be marked as 'Checked In' to appear in the analytics. This action automatically locks the assigned room in the 'Room Calendar', preventing any overlapping bookings or room changes during the stay period.</p>
+            </li>
+            <li class="instruction-item">
+                <strong>Finalized Check-Out & Billing</strong>
+                <p>Navigate to 'Search & Checkout' to retrieve the guest's record. You must verify the number of nights calculated by the system. If there are additional consumption charges (minibar, laundry), enter them manually in the 'Additional Charges' field before clicking 'Add to Bill'. Once 'Finish Checkout' is clicked, the invoice is generated and the room status is set to 'Cleaning'.</p>
+            </li>
+            <li class="instruction-item">
+                <strong>No-Show & Modification Policy</strong>
+                <p>For guests who fail to arrive by the scheduled check-in time, reservations should be marked as 'Cancelled' by an administrator to release the room inventory back into the available pool for walk-in guests.</p>
+            </li>
+        </ul>
+    </section>
+
+    <!-- Room Management -->
+    <section class="guide-section">
+        <h3><i class="fas fa-door-open"></i> Inventory & Housekeeping</h3>
+        <ul class="instruction-list">
+            <li class="instruction-item">
+                <strong>Room Status Definitions</strong>
+                <p><strong>Available:</strong> Ready for immediate check-in.<br>
+                <strong>Occupied:</strong> Guest is currently in-house.<br>
+                <strong>Cleaning:</strong> Set automatically after checkout; denotes room is being serviced.<br>
+                <strong>Maintenance:</strong> Set manually for repairs; room is completely removed from booking availability.</p>
+            </li>
+            <li class="instruction-item">
+                <strong>Housekeeping Cycle</strong>
+                <p>Standard room cleaning takes approximately 30-45 minutes. Once housekeeping confirms a room is ready, staff must manually update the status from 'Cleaning' to 'Available' in the 'Room Management' module or the 'Room Calendar'.</p>
+            </li>
+            <c:if test="${user.role eq 'admin'}">
+                <li class="instruction-item">
+                    <span class="role-badge badge-admin">Admin Only</span>
+                    <strong>Inventory Management</strong>
+                    <p>When adding new rooms, ensure the room number matches the physical floor numbering. Each room must be assigned a fixed 'Room Type' (Standard, Deluxe, or Suite) which determines its base nightly rate in the billing engine.</p>
+                </li>
+            </c:if>
+        </ul>
     </section>
 
     <!-- Guest Lifecycle -->
