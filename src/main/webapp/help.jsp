@@ -39,7 +39,7 @@
 
         /* Sidebar Styling */
         .sidebar {
-            min-width: 240px !important;
+            min-width: 280px !important;
             background: var(--sidebar-bg);
             height: 100vh;
             display: flex;
