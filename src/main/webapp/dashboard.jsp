@@ -13,12 +13,14 @@
             --primary: #0077b6;
             --primary-hover: #023e8a;
             --bg-gradient: linear-gradient(135deg, #00b4db, #0083b0);
-            --glass-bg: rgba(255, 255, 255, 0.9);
+            --glass-bg: rgba(255, 255, 255, 0.7);
             --sidebar-bg: rgba(255, 255, 255, 0.95);
-            --text-main: #333;
-            --text-muted: #666;
+            --text-main: #1a1a1a;
+            --text-muted: #555;
             --success: #2a9d8f;
             --danger: #e63946;
+            --accent: #caf0f8;
+            --card-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
         }
         * {
             box-sizing: border-box;
@@ -30,9 +32,12 @@
             height: 100vh;
             display: flex;
             background: #f0f4f8;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(0, 180, 219, 0.05) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(0, 131, 176, 0.05) 0px, transparent 50%);
             overflow: hidden;
         }
-        /* Sidebar Styling */
+        /* Sidebar Styling (UNCHANGED per user request) */
         .sidebar {
             width: 280px;
             background: var(--sidebar-bg);
@@ -109,122 +114,192 @@
             background: rgba(230, 57, 70, 0.1);
             color: var(--danger);
         }
-        /* Main Content */
+        /* Dashboard Content Area Styles */
         .main-content {
             flex-grow: 1;
             height: 100vh;
             overflow-y: auto;
-            padding: 40px;
-            background: #f8fbff;
+            padding: 50px;
+            background: transparent;
+            scroll-behavior: smooth;
         }
-        .welcome-section {
-            margin-bottom: 40px;
+        .dashboard-header {
+            margin-bottom: 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        .welcome-section h2 {
-            font-size: 28px;
+        .welcome-text h2 {
+            font-size: 32px;
+            font-weight: 700;
             color: var(--text-main);
-            margin-bottom: 10px;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
         }
-        .welcome-section p {
+        .welcome-text p {
             color: var(--text-muted);
+            font-size: 16px;
         }
-        /* Stats Grid */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-        .stat-card {
+        .date-badge {
             background: white;
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-            border: 1px solid rgba(0,0,0,0.05);
-            transition: transform 0.3s ease;
-        }
-        .stat-card:hover {
-            transform: translateY(-5px);
-        }
-        .stat-title {
+            padding: 10px 20px;
+            border-radius: 50px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
             font-size: 13px;
-            color: var(--text-muted);
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .stat-value {
-            font-size: 24px;
             font-weight: 600;
             color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
-        .stat-label {
+        /* Stats Grid - Premium Glassmorphism */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 30px;
+            margin-bottom: 60px;
+        }
+        .stat-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 30px;
+            border-radius: 24px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .stat-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 45px rgba(31, 38, 135, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+        }
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 119, 182, 0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+        .stat-info .stat-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+        .stat-info .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 5px;
+        }
+        .stat-info .stat-label {
             font-size: 12px;
             color: var(--text-muted);
-            margin-top: 5px;
         }
-        /* Actions Grid */
-        .actions-header {
-            margin-bottom: 20px;
-            font-size: 18px;
-            font-weight: 600;
+        /* Action Tiles */
+        .section-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .section-title::after {
+            content: '';
+            flex-grow: 1;
+            height: 1px;
+            background: rgba(0,0,0,0.05);
         }
         .actions-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
         }
-        .action-card {
+        .action-tile {
             background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-            border: 1px solid rgba(0,0,0,0.05);
+            padding: 35px;
+            border-radius: 20px;
+            text-decoration: none;
             display: flex;
             flex-direction: column;
-            align-items: flex-start;
+            gap: 15px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0,0,0,0.03);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.02);
         }
-        .action-card h3 {
-            font-size: 16px;
-            margin-bottom: 10px;
+        .action-tile:hover {
+            transform: scale(1.02);
+            box-shadow: 0 10px 30px rgba(0, 119, 182, 0.08);
+            border-color: rgba(0, 119, 182, 0.1);
+        }
+        .action-icon {
+            font-size: 28px;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+        .action-tile h3 {
+            font-size: 18px;
             color: var(--text-main);
+            font-weight: 600;
         }
-        .action-card p {
-            font-size: 13px;
+        .action-tile p {
+            font-size: 14px;
             color: var(--text-muted);
-            margin-bottom: 20px;
+            line-height: 1.5;
         }
-        .btn-action {
-            padding: 10px 20px;
+        .tile-arrow {
+            margin-top: auto;
+            align-self: flex-end;
+            width: 35px;
+            height: 35px;
+            background: #f8fbff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            transition: all 0.3s;
+        }
+        .action-tile:hover .tile-arrow {
             background: var(--primary);
             color: white;
-            text-decoration: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            transition: all 0.3s ease;
+            transform: translateX(5px);
         }
-        .btn-action:hover {
-            background: var(--primary-hover);
-            transform: scale(1.05);
-        }
-        .occupancy-bar {
-            width: 100%;
-            height: 8px;
-            background: #eee;
-            border-radius: 4px;
+        /* Occupancy Progress */
+        .occupancy-container {
             margin-top: 15px;
+            width: 100%;
+        }
+        .progress-track {
+            height: 10px;
+            background: rgba(0, 119, 182, 0.05);
+            border-radius: 500px;
             overflow: hidden;
         }
-        .occupancy-fill {
+        .progress-fill {
             height: 100%;
-            background: var(--primary);
-            border-radius: 4px;
+            background: var(--bg-gradient);
+            border-radius: 500px;
+            transition: width 1s ease-out;
         }
-        @media (max-width: 768px) {
+        @media (max-width: 992px) {
             body { flex-direction: column; }
-            .sidebar { width: 100%; height: auto; padding: 20px; }
-            .main-content { padding: 20px; }
+            .sidebar { width: 100%; height: auto; }
+            .main-content { padding: 30px; }
         }
     </style>
 </head>
@@ -286,86 +361,113 @@
     </a>
 </aside>
 <main class="main-content">
-    <div class="welcome-section">
-        <h2>Welcome Back, ${user.fullName.split(' ')[0]}</h2>
-        <p>Overview of resort operations for today.</p>
+    <div class="dashboard-header">
+        <div class="welcome-text">
+            <h2>Welcome Back, ${user.fullName.split(' ')[0]}</h2>
+            <p>Here is what's happening at the resort today.</p>
+        </div>
+        <div class="date-badge">
+            <i class="far fa-calendar-alt"></i>
+            <%= new java.text.SimpleDateFormat("EEEE, dd MMMM").format(new java.util.Date()) %>
+        </div>
     </div>
 
     <c:if test="${not empty error}">
-        <div style="padding: 15px; background: rgba(230, 57, 70, 0.1); color: #e63946; border-radius: 12px; margin-bottom: 30px; border: 1px solid rgba(230, 57, 70, 0.2); font-size: 14px;">
-            <i class="fas fa-exclamation-circle" style="margin-right: 8px;"></i> ${error}
+        <div style="padding: 20px; background: rgba(230, 57, 70, 0.05); color: #e63946; border-radius: 16px; margin-bottom: 40px; border-left: 5px solid #e63946; display: flex; align-items: center; gap: 15px; font-weight: 500;">
+            <i class="fas fa-exclamation-circle"></i> ${error}
         </div>
     </c:if>
     <c:if test="${not empty successMsg}">
-         <div style="padding: 15px; background: rgba(42, 157, 143, 0.1); color: #2a9d8f; border-radius: 12px; margin-bottom: 30px; border: 1px solid rgba(42, 157, 143, 0.2); font-size: 14px;">
-            <i class="fas fa-check-circle" style="margin-right: 8px;"></i> ${successMsg}
+         <div style="padding: 20px; background: rgba(42, 157, 143, 0.05); color: #2a9d8f; border-radius: 16px; margin-bottom: 40px; border-left: 5px solid #2a9d8f; display: flex; align-items: center; gap: 15px; font-weight: 500;">
+            <i class="fas fa-check-circle"></i> ${successMsg}
         </div>
         <% session.removeAttribute("successMsg"); %>
     </c:if>
+
     <div class="stats-grid">
         <div class="stat-card">
-            <div class="stat-title">Today's Check-ins</div>
-            <div class="stat-value">${todayCheckins}</div>
-            <div class="stat-label">Guests expected today</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-title">Today's Check-outs</div>
-            <div class="stat-value">${todayCheckouts}</div>
-            <div class="stat-label">Rooms to be vacated</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-title">Current Occupancy</div>
-            <div class="stat-value">${occupancyPercent}%</div>
-            <div class="stat-label">${currentBooked} / ${totalRooms} rooms booked</div>
-            <div class="occupancy-bar">
-                <div class="occupancy-fill" style="width: ${occupancyPercent}%"></div>
+            <div class="stat-icon"><i class="fas fa-user-check"></i></div>
+            <div class="stat-info">
+                <div class="stat-title">Arrivals</div>
+                <div class="stat-value">${todayCheckins}</div>
+                <div class="stat-label">Scheduled check-ins</div>
             </div>
         </div>
         <div class="stat-card">
-            <div class="stat-title">Today's Revenue</div>
-            <div class="stat-value">LKR ${todayRevenue}</div>
-            <div class="stat-label">Real-time revenue tracking</div>
+            <div class="stat-icon" style="color:#e67e22; background:rgba(230,126,34,0.1);"><i class="fas fa-user-clock"></i></div>
+            <div class="stat-info">
+                <div class="stat-title">Departures</div>
+                <div class="stat-value">${todayCheckouts}</div>
+                <div class="stat-label">Scheduled check-outs</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="color:#9b59b6; background:rgba(155,89,182,0.1);"><i class="fas fa-chart-pie"></i></div>
+            <div class="stat-info">
+                <div class="stat-title">Occupancy</div>
+                <div class="stat-value">${occupancyPercent}%</div>
+                <div class="stat-label">${currentBooked} / ${totalRooms} Rooms Occupied</div>
+                <div class="occupancy-container">
+                    <div class="progress-track"><div class="progress-fill" style="width: ${occupancyPercent}%"></div></div>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="color:#2ecc71; background:rgba(46,204,113,0.1);"><i class="fas fa-money-bill-wave"></i></div>
+            <div class="stat-info">
+                <div class="stat-title">Revenue</div>
+                <div class="stat-value" style="font-size: 24px;">LKR ${todayRevenue}</div>
+                <div class="stat-label">Expected for today</div>
+            </div>
         </div>
     </div>
-    <h3 class="actions-header">Quick Resort Actions</h3>
+
+    <h3 class="section-title">Operations Portal</h3>
     <div class="actions-grid">
-        <div class="action-card">
+        <a href="add-reservation" class="action-tile">
+            <div class="action-icon"><i class="fas fa-plus-circle"></i></div>
             <h3>New Reservation</h3>
-            <p>Register a guest and manage room booking effortlessly.</p>
-            <a href="add-reservation" class="btn-action">Create Booking</a>
-        </div>
-        <div class="action-card">
+            <p>Register a new booking and secure guest records instantly.</p>
+            <div class="tile-arrow"><i class="fas fa-chevron-right"></i></div>
+        </a>
+        <a href="room-availability" class="action-tile">
+            <div class="action-icon" style="color:#9b59b6;"><i class="fas fa-calendar-alt"></i></div>
             <h3>Room Calendar</h3>
-            <p>Visual monthly overview of room availability and occupancy.</p>
-            <a href="room-availability" class="btn-action">View Calendar</a>
-        </div>
-        <div class="action-card">
-            <h3>Manage Reservations</h3>
-            <p>View, update, cancel, delete, or see history of bookings.</p>
-            <a href="manage-reservations" class="btn-action">Manage Reservations</a>
-        </div>
-        <div class="action-card">
-            <h3>Search Reservations</h3>
-            <p>Quickly search for specific reservations and handle checkouts.</p>
-            <a href="reservation-search" class="btn-action">Search Now</a>
-        </div>
+            <p>Check interactive monthly availability and plan occupancy.</p>
+            <div class="tile-arrow"><i class="fas fa-chevron-right"></i></div>
+        </a>
+        <a href="manage-reservations" class="action-tile">
+            <div class="action-icon" style="color:#e67e22;"><i class="fas fa-tasks"></i></div>
+            <h3>Master Registry</h3>
+            <p>Complete control over active, cancelled, and history records.</p>
+            <div class="tile-arrow"><i class="fas fa-chevron-right"></i></div>
+        </a>
+        <a href="reservation-search" class="action-tile">
+            <div class="action-icon" style="color:#34495e;"><i class="fas fa-receipt"></i></div>
+            <h3>Express Checkout</h3>
+            <p>Quick search and automated bill generation for departing guests.</p>
+            <div class="tile-arrow"><i class="fas fa-chevron-right"></i></div>
+        </a>
         <c:if test="${user.role eq 'admin'}">
-            <div class="action-card">
-                <h3>Room Management</h3>
-                <p>Add new rooms and manage cleaning/availability status.</p>
-                <a href="manage-rooms" class="btn-action">Manage Rooms</a>
-            </div>
-            <div class="action-card">
-                <h3>User Management</h3>
-                <p>Register new staff or admin accounts to the system.</p>
-                <a href="add-user" class="btn-action">Add New User</a>
-            </div>
+            <a href="manage-rooms" class="action-tile">
+                <div class="action-icon" style="color:#e74c3c;"><i class="fas fa-hotel"></i></div>
+                <h3>Inventory Management</h3>
+                <p>Register new wing units and monitor housekeeping cycles.</p>
+                <div class="tile-arrow"><i class="fas fa-chevron-right"></i></div>
+            </a>
+            <a href="add-user" class="action-tile">
+                <div class="action-icon" style="color:#16a085;"><i class="fas fa-users-cog"></i></div>
+                <h3>User Governance</h3>
+                <p>Provision security clearances for resort staff and managers.</p>
+                <div class="tile-arrow"><i class="fas fa-chevron-right"></i></div>
+            </a>
         </c:if>
-        <div class="action-card">
-            <h3>Staff Guidelines</h3>
-            <p>Access system manuals and operation protocols.</p>
-            <a href="help" class="btn-action">View Help</a>
-        </div>
+        <a href="help" class="action-tile">
+            <div class="action-icon" style="color:#7f8c8d;"><i class="fas fa-book-reader"></i></div>
+            <h3>Operational Help</h3>
+            <p>Access guidelines and protocols for all system modules.</p>
+            <div class="tile-arrow"><i class="fas fa-chevron-right"></i></div>
+        </a>
     </div>
 </main>
 </body>
