@@ -15,7 +15,7 @@ import java.util.List;
 @WebServlet("/reservation-search")
 public class ReservationSearchServlet extends HttpServlet {
 
-    private final ReservationDAO reservationDAO = new ReservationDAO();
+    private final ReservationDAO reservationDAO = ReservationDAO.getInstance();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {

@@ -5,6 +5,8 @@ import java.sql.Date;
 import java.sql.Time;
 import java.time.temporal.ChronoUnit;
 
+// Builder Pattern
+// Encapsulation
 public class Reservation implements Serializable {
     private Integer id;
     private String reservationNumber;
@@ -21,7 +23,6 @@ public class Reservation implements Serializable {
     private String roomPreference;
     private Double totalAmount;
 
-    // Getters & Setters (add all)
     public Integer getId() {
         return id;
     }
@@ -126,7 +127,6 @@ public class Reservation implements Serializable {
         this.roomPreference = roomPreference;
     }
 
-    // Optional: computed nights
     public long getNights() {
         if (checkIn != null && checkOut != null) {
             return ChronoUnit.DAYS.between(checkIn.toLocalDate(), checkOut.toLocalDate());
@@ -140,5 +140,28 @@ public class Reservation implements Serializable {
 
     public void setTotalAmount(Double totalAmount) {
         this.totalAmount = totalAmount;
+    }
+
+    public static class Builder {
+        private final Reservation reservation = new Reservation();
+
+        public Builder id(Integer id) { reservation.setId(id); return this; }
+        public Builder reservationNumber(String reservationNumber) { reservation.setReservationNumber(reservationNumber); return this; }
+        public Builder guestId(Integer guestId) { reservation.setGuestId(guestId); return this; }
+        public Builder roomId(Integer roomId) { reservation.setRoomId(roomId); return this; }
+        public Builder checkIn(Date checkIn) { reservation.setCheckIn(checkIn); return this; }
+        public Builder checkOut(Date checkOut) { reservation.setCheckOut(checkOut); return this; }
+        public Builder ratePerNight(Double ratePerNight) { reservation.setRatePerNight(ratePerNight); return this; }
+        public Builder specialRequests(String specialRequests) { reservation.setSpecialRequests(specialRequests); return this; }
+        public Builder vehicleNumber(String vehicleNumber) { reservation.setVehicleNumber(vehicleNumber); return this; }
+        public Builder wakeUpCall(Time wakeUpCall) { reservation.setWakeUpCall(wakeUpCall); return this; }
+        public Builder luggageStorage(Boolean luggageStorage) { reservation.setLuggageStorage(luggageStorage); return this; }
+        public Builder loyaltyNumber(String loyaltyNumber) { reservation.setLoyaltyNumber(loyaltyNumber); return this; }
+        public Builder roomPreference(String roomPreference) { reservation.setRoomPreference(roomPreference); return this; }
+        public Builder totalAmount(Double totalAmount) { reservation.setTotalAmount(totalAmount); return this; }
+
+        public Reservation build() {
+            return reservation;
+        }
     }
 }

@@ -23,8 +23,8 @@ import java.util.List;
 @WebServlet("/cancel-reservation")
 public class CancelReservationServlet extends HttpServlet {
 
-    private final ReservationDAO reservationDAO = new ReservationDAO();
-    private final RoomDAO roomDAO = new RoomDAO();
+    private final ReservationDAO reservationDAO = ReservationDAO.getInstance();
+    private final RoomDAO roomDAO = RoomDAO.getInstance();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {

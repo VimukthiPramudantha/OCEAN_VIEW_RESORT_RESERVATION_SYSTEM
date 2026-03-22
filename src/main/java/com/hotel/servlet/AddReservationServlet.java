@@ -5,6 +5,7 @@ import com.hotel.dao.ReservationDAO;
 import com.hotel.dao.RoomDAO;
 import com.hotel.model.Guest;
 import com.hotel.model.Reservation;
+import com.hotel.service.ReservationProcessorFactory;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -23,9 +24,9 @@ import java.time.format.DateTimeParseException;
 @WebServlet("/add-reservation")
 public class AddReservationServlet extends HttpServlet {
 
-    private final GuestDAO guestDAO = new GuestDAO();
-    private final RoomDAO roomDAO = new RoomDAO();
-    private final ReservationDAO reservationDAO = new ReservationDAO();
+    private final GuestDAO guestDAO = GuestDAO.getInstance();
+    private final RoomDAO roomDAO = RoomDAO.getInstance();
+    private final ReservationDAO reservationDAO = ReservationDAO.getInstance();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -36,7 +37,6 @@ public class AddReservationServlet extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         Connection conn = null;
         try {
-            // === Parse & Validate ===
             String nicPassport = trimOrNull(req.getParameter("nicPassport"));
             String fullName = trimOrNull(req.getParameter("fullName"));
             String nationality = trimOrNull(req.getParameter("nationality"));
@@ -57,7 +57,6 @@ public class AddReservationServlet extends HttpServlet {
             int children = safeParseInt(req.getParameter("children"), 0);
             int infants = safeParseInt(req.getParameter("infants"), 0);
 
-            // Mandatory validation
             if (isBlank(nicPassport) || isBlank(fullName) || isBlank(contact) ||
                     isBlank(nationality) || isBlank(roomType) || isBlank(checkInStr) || isBlank(checkOutStr)) {
                 req.setAttribute("error", "All mandatory fields must be filled.");
@@ -74,7 +73,6 @@ public class AddReservationServlet extends HttpServlet {
                 return;
             }
 
-            // === Availability & Rate ===
             int roomId = roomDAO.findAvailableRoomId(roomType, checkIn, checkOut);
             if (roomId == -1) {
                 req.setAttribute("error", "No " + roomType + " room available for selected dates.");
@@ -89,7 +87,6 @@ public class AddReservationServlet extends HttpServlet {
                 return;
             }
 
-            // === Wake-up call (safe parsing) ===
             Time wakeUpTime = null;
             if (!isBlank(wakeUpCallStr)) {
                 try {
@@ -102,7 +99,6 @@ public class AddReservationServlet extends HttpServlet {
                 }
             }
 
-            // === Guest handling ===
             Guest guest = guestDAO.findByContactOrNic(contact, nicPassport);
             if (guest == null) {
                 guest = new Guest();
@@ -115,42 +111,47 @@ public class AddReservationServlet extends HttpServlet {
                 guest.setContact(contact);
                 guest.setEmail(email);
 
-                int newGuestId = guestDAO.save(guest);
-                if (newGuestId == -1) {
+                if (!guestDAO.save(guest)) {
                     req.setAttribute("error",
                             "Failed to save guest details. Possible duplicate contact/NIC or database issue.");
                     forwardWithError(req, resp);
                     return;
                 }
-                guest.setId(newGuestId);
             }
 
-            // === Build reservation ===
-            Reservation res = new Reservation();
-            res.setGuestId(guest.getId());
-            res.setRoomId(roomId);
-            res.setCheckIn(checkIn);
-            res.setCheckOut(checkOut);
-            res.setRatePerNight(rate);
-            res.setSpecialRequests(specialRequests);
-            res.setVehicleNumber(vehicleNumber);
-            res.setRoomPreference(roomPreference);
-            res.setWakeUpCall(wakeUpTime);
-            res.setLuggageStorage(luggageStorage);
-            res.setLoyaltyNumber(loyaltyNumber);
-            res.setReservationNumber(generateReservationNumber());
+            long nights = java.time.temporal.ChronoUnit.DAYS.between(checkIn.toLocalDate(), checkOut.toLocalDate());
+            double totalAmount = nights * rate;
 
-            // === Transaction: Save reservation + mark room booked ===
+            // Design Pattern: Builder Pattern
+            Reservation res = new Reservation.Builder()
+                    .guestId(guest.getId())
+                    .roomId(roomId)
+                    .checkIn(checkIn)
+                    .checkOut(checkOut)
+                    .ratePerNight(rate)
+                    .totalAmount(totalAmount)
+                    .specialRequests(specialRequests)
+                    .vehicleNumber(vehicleNumber)
+                    .wakeUpCall(wakeUpTime)
+                    .luggageStorage(luggageStorage)
+                    .roomPreference(roomPreference)
+                    .loyaltyNumber(loyaltyNumber)
+                    .reservationNumber(generateReservationNumber())
+                    .build();
+
+            // Design Pattern: Factory Method Pattern
+            com.hotel.service.ReservationProcessor processor = 
+                ReservationProcessorFactory.getProcessor(roomType);
+            processor.process(res);
+
             conn = DBUtil.getConnection();
             conn.setAutoCommit(false);
 
             try {
-                // Save reservation
                 if (!reservationDAO.save(res, conn)) {
                     throw new SQLException("Failed to save reservation");
                 }
 
-                // Mark room as booked
                 if (!roomDAO.markAsBooked(roomId, conn)) {
                     throw new SQLException("Failed to update room status to booked");
                 }
@@ -203,7 +204,6 @@ public class AddReservationServlet extends HttpServlet {
         return "RES-" + java.time.Year.now().getValue() + "-" + (System.nanoTime() % 1000000);
     }
 
-    // Helpers for transaction management
     private void rollbackQuietly(Connection conn) {
         if (conn != null) {
             try {

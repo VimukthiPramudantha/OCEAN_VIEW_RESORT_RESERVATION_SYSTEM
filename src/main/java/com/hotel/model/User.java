@@ -1,38 +1,40 @@
 package com.hotel.model;
 
-import java.io.Serializable;
 
-public class User implements Serializable {
+
+//Inheritance (Extends Person)
+//Encapsulation (Private fields with Getters/Setters)
+public class User extends Person {
     private String username;
-    private String password;      // plain for now; NEVER in prod
-    private String fullName;
-    private String role;          // e.g. "admin", "staff"
+    private String password;
+    private String role;
 
     // Constructors
-    public User() {}
+    public User() {
+        super();
+    }
 
-    public User(String username, String password, String fullName, String role) {
+    public User(String username, String password, String name, String role) {
+        super(name, null, null);
         this.username = username;
         this.password = password;
-        this.fullName = fullName;
         this.role = role;
     }
 
-    // Getters & Setters
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }
 
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
 
-    public String getFullName() { return fullName; }
-    public void setFullName(String fullName) { this.fullName = fullName; }
+    public String getFullName() { return getName(); }
+    public void setFullName(String fullName) { setName(fullName); }
 
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
 
     @Override
     public String toString() {
-        return "User{username='" + username + "', role='" + role + "'}";
+        return "User{username='" + username + "', role='" + role + "', name='" + getName() + "'}";
     }
 }

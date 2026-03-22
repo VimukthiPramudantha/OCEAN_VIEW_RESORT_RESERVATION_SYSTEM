@@ -18,8 +18,8 @@ import java.util.List;
 @WebServlet("/reservation-history")
 public class GuestHistoryServlet extends HttpServlet {
 
-    private final GuestDAO guestDAO = new GuestDAO();
-    private final ReservationDAO reservationDAO = new ReservationDAO();
+    private final GuestDAO guestDAO = GuestDAO.getInstance();
+    private final ReservationDAO reservationDAO = ReservationDAO.getInstance();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {

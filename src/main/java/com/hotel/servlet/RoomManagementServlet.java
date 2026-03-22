@@ -17,7 +17,7 @@ import java.util.List;
 @WebServlet("/manage-rooms")
 public class RoomManagementServlet extends HttpServlet {
 
-    private final RoomDAO roomDAO = new RoomDAO();
+    private final RoomDAO roomDAO = RoomDAO.getInstance();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {

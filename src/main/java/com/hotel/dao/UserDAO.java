@@ -8,32 +8,74 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class UserDAO {
+import java.util.ArrayList;
+import java.util.List;
+
+// Design Pattern: Singleton
+// Design Pattern: DAO Pattern
+public class UserDAO implements UserDAOInterface {
+
+    private static UserDAO instance;
+
+    private UserDAO() {}
+
+    public static synchronized UserDAO getInstance() {
+        if (instance == null) {
+            instance = new UserDAO();
+        }
+        return instance;
+    }
+
+    @Override
+    public User findById(String id) {
+        return null; 
+    }
+
+    @Override
+    public List<User> findAll() {
+        List<User> users = new ArrayList<>();
+        String sql = "SELECT username, full_name, role FROM users";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                User u = new User();
+                u.setUsername(rs.getString("username"));
+                u.setFullName(rs.getString("full_name"));
+                u.setRole(rs.getString("role"));
+                users.add(u);
+            }
+        } catch (SQLException e) {
+            System.err.println("Find all users error: " + e.getMessage());
+        }
+        return users;
+    }
+
+    @Override
+    public boolean save(User user) {
+        return createUser(user);
+    }
 
     public User findByUsernameAndPassword(String username, String password) {
         String sql = "SELECT username, password, full_name, role FROM users WHERE username = ? AND password = ?";
-
         try (Connection conn = DBUtil.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql)) {
-
             ps.setString(1, username);
-            ps.setString(2, password); // plain text comparison
-
+            ps.setString(2, password);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     User user = new User();
                     user.setUsername(rs.getString("username"));
-                    user.setPassword(rs.getString("password")); // not needed after auth, but ok
+                    user.setPassword(rs.getString("password"));
                     user.setFullName(rs.getString("full_name"));
                     user.setRole(rs.getString("role"));
                     return user;
                 }
             }
         } catch (SQLException e) {
-            // In production: log properly (e.g. SLF4J)
             System.err.println("Login DB error: " + e.getMessage());
         }
-        return null; // invalid credentials
+        return null;
     }
 
     public boolean createUser(User user) {
@@ -66,4 +108,4 @@ public class UserDAO {
         }
         return false;
     }
-}
+}

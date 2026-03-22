@@ -7,20 +7,67 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class GuestDAO {
+// Design Pattern: Singleton
+// Design Pattern: DAO Pattern
+public class GuestDAO implements GuestDAOInterface {
 
-    /**
-     * Find existing guest by contact number or NIC/passport
-     * Used to avoid duplicate guests
-     */
+    private static GuestDAO instance;
+
+    private GuestDAO() {}
+
+    public static synchronized GuestDAO getInstance() {
+        if (instance == null) {
+            instance = new GuestDAO();
+        }
+        return instance;
+    }
+
+    @Override
+    public boolean save(Guest guest) {
+        int id = saveAndReturnId(guest);
+        if (id > 0) {
+            guest.setId(id);
+            return true;
+        }
+        return false;
+    }
+
+    public int saveAndReturnId(Guest guest) {
+        String sql = "INSERT INTO guests (name, nic_passport, adults, children, infants, nationality, contact, email) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        try (Connection conn = DBUtil.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setString(1, guest.getName());
+            ps.setString(2, guest.getNicPassport());
+            ps.setInt(3, guest.getAdults() != null ? guest.getAdults() : 1);
+            ps.setInt(4, guest.getChildren() != null ? guest.getChildren() : 0);
+            ps.setInt(5, guest.getInfants() != null ? guest.getInfants() : 0);
+            ps.setString(6, guest.getNationality());
+            ps.setString(7, guest.getContact());
+            ps.setString(8, guest.getEmail());
+            int rows = ps.executeUpdate();
+            if (rows == 0) return -1;
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+            return -1;
+        } catch (SQLException e) {
+            System.err.println("Guest insert failed: " + e.getMessage());
+            return -1;
+        }
+    }
+
+    @Override
+    public Guest findById(Integer id) {
+        return findById((int) id);
+    }
+
+    @Override
     public Guest findByContactOrNic(String contact, String nicPassport) {
         String sql = "SELECT * FROM guests WHERE contact = ? OR nic_passport = ? LIMIT 1";
         try (Connection conn = DBUtil.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql)) {
-
             ps.setString(1, contact);
             ps.setString(2, nicPassport);
-
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     Guest g = new Guest();
@@ -42,16 +89,9 @@ public class GuestDAO {
         return null;
     }
 
-    /**
-     * Find guest by NIC/passport or contact (exact match)
-     */
+    @Override
     public Guest findByNicOrContact(String term) {
-        String sql = """
-                    SELECT * FROM guests
-                    WHERE nic_passport = ? OR contact = ?
-                    LIMIT 1
-                """;
-
+        String sql = "SELECT * FROM guests WHERE nic_passport = ? OR contact = ? LIMIT 1";
         try (Connection conn = DBUtil.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, term);
@@ -65,7 +105,6 @@ public class GuestDAO {
                     g.setContact(rs.getString("contact"));
                     g.setEmail(rs.getString("email"));
                     g.setNationality(rs.getString("nationality"));
-                    // add others if needed
                     return g;
                 }
             }
@@ -75,87 +114,25 @@ public class GuestDAO {
         return null;
     }
 
-    /**
-     * Save new guest and return the generated ID
-     */
-    public int save(Guest guest) {
-        String sql = """
-                    INSERT INTO guests (name, nic_passport, adults, children, infants,
-                                        nationality, contact, email)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """;
-
-        try (Connection conn = DBUtil.getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-
-            ps.setString(1, guest.getName());
-            ps.setString(2, guest.getNicPassport());
-            ps.setInt(3, guest.getAdults() != null ? guest.getAdults() : 1);
-            ps.setInt(4, guest.getChildren() != null ? guest.getChildren() : 0);
-            ps.setInt(5, guest.getInfants() != null ? guest.getInfants() : 0);
-            ps.setString(6, guest.getNationality());
-            ps.setString(7, guest.getContact());
-            ps.setString(8, guest.getEmail());
-
-            int rows = ps.executeUpdate();
-            if (rows == 0) {
-                return -1;
-            }
-
-            try (ResultSet rs = ps.getGeneratedKeys()) {
-                if (rs.next()) {
-                    return rs.getInt(1);
-                }
-            }
-            return -1;
-
-        } catch (SQLException e) {
-            System.err.println("Guest insert failed: " + e.getMessage());
-            e.printStackTrace();
-            if (e.getSQLState().equals("23000") && e.getErrorCode() == 1062) {
-                System.err.println("Likely cause: Duplicate contact or NIC/passport");
-            }
-            return -1;
-        }
-    }
-
-    /**
-     * Retrieves the full name of a guest by their guest_id.
-     * Returns null if no guest is found.
-     */
     public String getGuestNameById(Integer guestId) {
-        if (guestId == null || guestId <= 0) {
-            return null;
-        }
-
+        if (guestId == null || guestId <= 0) return null;
         String sql = "SELECT name FROM guests WHERE guest_id = ?";
-
         try (Connection conn = DBUtil.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql)) {
-
             ps.setInt(1, guestId);
-
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getString("name");
-                }
+                if (rs.next()) return rs.getString("name");
             }
         } catch (SQLException e) {
             System.err.println("Failed to fetch guest name for ID " + guestId + ": " + e.getMessage());
         }
-
         return null;
     }
 
-    /**
-     * Find guest by ID
-     */
     public Guest findById(int id) {
         String sql = "SELECT * FROM guests WHERE guest_id = ?";
-
         try (Connection conn = DBUtil.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql)) {
-
             ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -178,20 +155,12 @@ public class GuestDAO {
         return null;
     }
 
-    /**
-     * Returns ALL guests in the system, sorted by name
-     */
     public List<Guest> findAll() {
         List<Guest> list = new ArrayList<>();
-        String sql = """
-                    SELECT * FROM guests
-                    ORDER BY name ASC
-                """;
-
+        String sql = "SELECT * FROM guests ORDER BY name ASC";
         try (Connection conn = DBUtil.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql);
                 ResultSet rs = ps.executeQuery()) {
-
             while (rs.next()) {
                 Guest g = new Guest();
                 g.setId(rs.getInt("guest_id"));
@@ -211,29 +180,15 @@ public class GuestDAO {
         return list;
     }
 
-    /**
-     * Search guests by partial match on name, NIC/passport, or contact
-     */
     public List<Guest> searchGuests(String searchTerm) {
         List<Guest> list = new ArrayList<>();
-        String sql = """
-                    SELECT * FROM guests
-                    WHERE name LIKE ?
-                       OR nic_passport LIKE ?
-                       OR contact LIKE ?
-                    ORDER BY name ASC
-                """;
-
-        // Add wildcards for partial match
+        String sql = "SELECT * FROM guests WHERE name LIKE ? OR nic_passport LIKE ? OR contact LIKE ? ORDER BY name ASC";
         String likeTerm = "%" + searchTerm.trim() + "%";
-
         try (Connection conn = DBUtil.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql)) {
-
             ps.setString(1, likeTerm);
             ps.setString(2, likeTerm);
             ps.setString(3, likeTerm);
-
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Guest g = new Guest();

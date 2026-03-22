@@ -2,7 +2,6 @@ package com.hotel.servlet;
 
 import com.hotel.dao.ReservationDAO;
 import com.hotel.dto.ReservationDisplayDTO;
-import com.hotel.model.User;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -17,7 +16,7 @@ import java.util.List;
 @WebServlet("/view-reservations")
 public class ViewReservationsServlet extends HttpServlet {
 
-    private final ReservationDAO reservationDAO = new ReservationDAO();
+    private final ReservationDAO reservationDAO = ReservationDAO.getInstance();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {

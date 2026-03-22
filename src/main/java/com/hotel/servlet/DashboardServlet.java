@@ -16,8 +16,8 @@ import java.math.BigDecimal;
 @WebServlet("/dashboard")
 public class DashboardServlet extends HttpServlet {
 
-    private final RoomDAO roomDAO = new RoomDAO();
-    private final ReservationDAO reservationDAO = new ReservationDAO();
+    private final RoomDAO roomDAO = RoomDAO.getInstance();
+    private final ReservationDAO reservationDAO = ReservationDAO.getInstance();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {

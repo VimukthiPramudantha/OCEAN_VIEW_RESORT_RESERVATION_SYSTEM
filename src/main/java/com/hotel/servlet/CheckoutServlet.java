@@ -19,7 +19,7 @@ import java.time.temporal.ChronoUnit;
 @WebServlet("/checkout")
 public class CheckoutServlet extends HttpServlet {
 
-    private final ReservationDAO reservationDAO = new ReservationDAO();
+    private final ReservationDAO reservationDAO = ReservationDAO.getInstance();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {

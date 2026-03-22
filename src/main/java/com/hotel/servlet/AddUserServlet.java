@@ -14,7 +14,7 @@ import java.io.IOException;
 @WebServlet("/add-user")
 public class AddUserServlet extends HttpServlet {
 
-    private final UserDAO userDAO = new UserDAO();
+    private final UserDAO userDAO = UserDAO.getInstance();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {

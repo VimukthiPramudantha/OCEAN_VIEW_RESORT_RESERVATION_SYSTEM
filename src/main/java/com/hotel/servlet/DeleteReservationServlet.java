@@ -17,8 +17,8 @@ import java.util.List;
 @WebServlet("/delete-reservation")
 public class DeleteReservationServlet extends HttpServlet {
 
-    private final ReservationDAO reservationDAO = new ReservationDAO();
-    private final GuestDAO guestDAO = new GuestDAO();
+    private final ReservationDAO reservationDAO = ReservationDAO.getInstance();
+    private final GuestDAO guestDAO = GuestDAO.getInstance();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {

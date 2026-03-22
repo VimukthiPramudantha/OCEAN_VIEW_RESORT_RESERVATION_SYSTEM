@@ -1,28 +1,26 @@
 package com.hotel.model;
 
-import java.io.Serializable;
 
-public class Guest implements Serializable {
-    private Integer id;              // guest_id (auto-generated)
-    private String name;
+
+//Inheritance (Extends Person)
+//Encapsulation (Private fields with Getters/Setters)
+public class Guest extends Person {
+    private Integer id;        
     private String nicPassport;
     private Integer adults;
     private Integer children;
     private Integer infants;
     private String nationality;
-    private String contact;
-    private String email;
-    private String address;          // optional — add if needed later
+    private String address;    
 
     // Constructors
-    public Guest() {}
+    public Guest() {
+        super();
+    }
 
     // Getters & Setters
     public Integer getId() { return id; }
     public void setId(Integer id) { this.id = id; }
-
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
 
     public String getNicPassport() { return nicPassport; }
     public void setNicPassport(String nicPassport) { this.nicPassport = nicPassport; }
@@ -39,17 +37,11 @@ public class Guest implements Serializable {
     public String getNationality() { return nationality; }
     public void setNationality(String nationality) { this.nationality = nationality; }
 
-    public String getContact() { return contact; }
-    public void setContact(String contact) { this.contact = contact; }
-
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
-
     public String getAddress() { return address; }
     public void setAddress(String address) { this.address = address; }
 
     @Override
     public String toString() {
-        return "Guest{id=" + id + ", name='" + name + "', contact='" + contact + "'}";
+        return "Guest{id=" + id + ", name='" + getName() + "', contact='" + getContact() + "'}";
     }
 }
