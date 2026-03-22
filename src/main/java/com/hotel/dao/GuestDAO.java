@@ -7,8 +7,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-// Design Pattern: Singleton
-// Design Pattern: DAO Pattern
+// Singleton
 public class GuestDAO implements GuestDAOInterface {
 
     private static GuestDAO instance;

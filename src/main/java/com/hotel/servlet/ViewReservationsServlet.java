@@ -26,7 +26,6 @@ public class ViewReservationsServlet extends HttpServlet {
             return;
         }
 
-        // Optional date filters
         String startStr = req.getParameter("startDate");
         String endStr = req.getParameter("endDate");
 

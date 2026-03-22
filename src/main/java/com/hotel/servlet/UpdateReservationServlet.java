@@ -28,7 +28,6 @@ public class UpdateReservationServlet extends HttpServlet {
 
         String idStr = req.getParameter("id");
         if (idStr != null && !idStr.isEmpty()) {
-            // Edit mode: load one reservation for editing
             try {
                 int id = Integer.parseInt(idStr);
                 ReservationDisplayDTO res = reservationDAO.findById(id);
@@ -44,7 +43,6 @@ public class UpdateReservationServlet extends HttpServlet {
             }
         }
 
-        // Default: show list of reservations to choose from
         List<ReservationDisplayDTO> reservations = reservationDAO.findActiveForUpdate();
         req.setAttribute("reservations", reservations);
         req.getRequestDispatcher("/update-reservation-list.jsp").forward(req, resp);
@@ -68,14 +66,12 @@ public class UpdateReservationServlet extends HttpServlet {
         try {
             int reservationId = Integer.parseInt(idStr.trim());
 
-            // Parse new values from form
             String specialRequests = req.getParameter("specialRequests");
             String adultsStr = req.getParameter("adults");
             String childrenStr = req.getParameter("children");
             String checkInStr = req.getParameter("checkIn");
             String checkOutStr = req.getParameter("checkOut");
 
-            // Required fields validation
             if (checkInStr == null || checkOutStr == null || adultsStr == null) {
                 req.setAttribute("error", "Check-in, check-out, and adults are required.");
                 forwardToList(req, resp);
@@ -85,14 +81,12 @@ public class UpdateReservationServlet extends HttpServlet {
             Date newCheckIn = Date.valueOf(checkInStr);
             Date newCheckOut = Date.valueOf(checkOutStr);
 
-            // Date logic check
             if (newCheckOut.before(newCheckIn) || newCheckOut.equals(newCheckIn)) {
                 req.setAttribute("error", "Check-out must be after check-in date.");
                 forwardToList(req, resp);
                 return;
             }
 
-            // Overlap check (exclude current reservation)
             boolean hasConflict = reservationDAO.hasOverlapExcludingSelf(reservationId, newCheckIn, newCheckOut);
             if (hasConflict) {
                 req.setAttribute("error", "Selected dates overlap with another active booking.");
@@ -100,11 +94,9 @@ public class UpdateReservationServlet extends HttpServlet {
                 return;
             }
 
-            // Parse numbers safely
             int adults = safeParseInt(adultsStr, 1);
             int children = safeParseInt(childrenStr, 0);
 
-            // Perform the update
             boolean success = reservationDAO.updateDetails(
                     reservationId, specialRequests, adults, children, newCheckIn, newCheckOut);
 
@@ -113,8 +105,6 @@ public class UpdateReservationServlet extends HttpServlet {
                 resp.sendRedirect("view-reservations");
             } else {
                 req.setAttribute("error", "Failed to update reservation (no changes made or database error).");
-                // Reload the reservation and forward back to the form
-                ReservationDisplayDTO res = reservationDAO.findById(reservationId);
                 req.setAttribute("reservation", res);
                 req.getRequestDispatcher("/update-reservation.jsp").forward(req, resp);
             }

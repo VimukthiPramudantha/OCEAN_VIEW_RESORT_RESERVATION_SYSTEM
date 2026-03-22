@@ -42,11 +42,10 @@ public class CheckoutServlet extends HttpServlet {
             return;
         }
 
-        // Calculate nights and total bill
         long nights = ChronoUnit.DAYS.between(reservation.getCheckIn().toLocalDate(),
                 reservation.getCheckOut().toLocalDate());
         if (nights <= 0)
-            nights = 1; // Minimum 1 night charge
+            nights = 1; 
 
         double totalBill = nights * reservation.getRatePerNight();
 
@@ -84,10 +83,8 @@ public class CheckoutServlet extends HttpServlet {
             conn = DBUtil.getConnection();
             conn.setAutoCommit(false);
 
-            // 1. Update reservation status to 'checked_out'
             String updateStatusSql = "UPDATE reservations SET status = 'checked_out' WHERE reservation_id = ?";
 
-            // Capture billing adjustments
             double serviceCharge = req.getParameter("serviceCharge") != null
                     ? Double.parseDouble(req.getParameter("serviceCharge"))
                     : 0.0;
@@ -99,13 +96,11 @@ public class CheckoutServlet extends HttpServlet {
                     ? Double.parseDouble(req.getParameter("totalAmount"))
                     : 0.0;
 
-            // Re-calculate nights for display
             long nights = ChronoUnit.DAYS.between(reservation.getCheckIn().toLocalDate(),
                     reservation.getCheckOut().toLocalDate());
             if (nights <= 0)
                 nights = 1;
 
-            // 1. Update reservation status to 'checked_out'
             try (PreparedStatement psStatus = conn.prepareStatement(updateStatusSql)) {
                 psStatus.setInt(1, reservationId);
                 psStatus.executeUpdate();
@@ -113,7 +108,6 @@ public class CheckoutServlet extends HttpServlet {
                 throw new SQLException("Error updating reservation status: " + e.getMessage());
             }
 
-            // 2. Save detailed checkout record
             try {
                 com.hotel.model.Checkout checkoutRecord = new com.hotel.model.Checkout();
                 checkoutRecord.setReservationId(reservationId);
@@ -126,7 +120,7 @@ public class CheckoutServlet extends HttpServlet {
                 throw new SQLException("Error saving checkout record: " + e.getMessage());
             }
 
-            // 3. Set the room to 'cleaning' status
+
             String updateRoomSql = "UPDATE rooms SET status = 'cleaning' WHERE room_id = ?";
             try (PreparedStatement psRoom = conn.prepareStatement(updateRoomSql)) {
                 psRoom.setInt(1, reservation.getRoomId());
@@ -137,10 +131,9 @@ public class CheckoutServlet extends HttpServlet {
 
             conn.commit();
 
-            // Set attributes for success page
             req.setAttribute("reservation", reservation);
             req.setAttribute("nights", nights);
-            req.setAttribute("totalBill", totalAmount); // Use the final total amount
+            req.setAttribute("totalBill", totalAmount);
             req.setAttribute("serviceCharge", serviceCharge);
             req.setAttribute("tax", tax);
             req.setAttribute("additionalCharges", additionalCharges);

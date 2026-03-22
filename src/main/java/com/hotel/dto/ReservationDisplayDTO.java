@@ -7,9 +7,9 @@ public class ReservationDisplayDTO {
     private Integer id;
     private String reservationNumber;
     private Integer guestId;
-    private String guestName; // display-only from JOIN
+    private String guestName; 
     private Integer roomId;
-    private String roomType; // optional — if you join it
+    private String roomType; 
     private Date checkIn;
     private Date checkOut;
     private Double ratePerNight;
@@ -19,10 +19,8 @@ public class ReservationDisplayDTO {
     private Boolean luggageStorage;
     private String loyaltyNumber;
     private String roomPreference;
-    private String status; // if present in DB
+    private String status; 
     private Double totalAmount;
-
-    // NEW fields needed for the update form
     private Integer adults;
     private Integer children;
     private Integer infants;
@@ -30,8 +28,6 @@ public class ReservationDisplayDTO {
     // Constructors
     public ReservationDisplayDTO() {
     }
-
-    // Getters & Setters (all fields)
 
     public Integer getId() {
         return id;

@@ -10,8 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-// Design Pattern: Singleton
-// Design Pattern: DAO Pattern
+// Singleton
+// DAO Pattern
 public class RoomDAO {
 
     private static RoomDAO instance;

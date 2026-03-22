@@ -1,6 +1,6 @@
 package com.hotel.service;
 
-// Design Pattern: Factory Method Pattern
+//Factory Method Pattern
 public class ReservationProcessorFactory {
 
     public static ReservationProcessor getProcessor(String roomType) {

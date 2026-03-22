@@ -38,11 +38,10 @@ public class GuestHistoryServlet extends HttpServlet {
 
         String guestIdStr = req.getParameter("guestId");
 
-        // If guestId is provided → show detailed history for that guest
         if (guestIdStr != null && !guestIdStr.trim().isEmpty()) {
             try {
                 int guestId = Integer.parseInt(guestIdStr.trim());
-                Guest guest = guestDAO.findById(guestId); // you need this method (see below)
+                Guest guest = guestDAO.findById(guestId);
 
                 if (guest == null) {
                     req.setAttribute("error", "Guest not found.");
@@ -50,7 +49,6 @@ public class GuestHistoryServlet extends HttpServlet {
                     return;
                 }
 
-                // Load reservations and split into categories (case-insensitive)
                 List<ReservationDisplayDTO> allHistory = reservationDAO.findByGuestId(guestId);
 
                 List<ReservationDisplayDTO> current = allHistory.stream()
@@ -80,7 +78,6 @@ public class GuestHistoryServlet extends HttpServlet {
             }
         }
 
-        // Default: show list of all guests
         showGuestList(req, resp);
     }
 

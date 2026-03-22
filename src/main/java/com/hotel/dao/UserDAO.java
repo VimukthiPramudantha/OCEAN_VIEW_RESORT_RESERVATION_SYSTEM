@@ -11,8 +11,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-// Design Pattern: Singleton
-// Design Pattern: DAO Pattern
+//Singleton
+//DAO Pattern
 public class UserDAO implements UserDAOInterface {
 
     private static UserDAO instance;
@@ -108,4 +108,4 @@ public class UserDAO implements UserDAOInterface {
         }
         return false;
     }
-}
+}

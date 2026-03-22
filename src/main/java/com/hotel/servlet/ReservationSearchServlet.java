@@ -25,7 +25,6 @@ public class ReservationSearchServlet extends HttpServlet {
             return;
         }
 
-        // Optional filters (status, date range, guest name, etc.)
         String statusFilter = req.getParameter("status");
         String guestName = req.getParameter("guestName");
 
@@ -36,8 +35,7 @@ public class ReservationSearchServlet extends HttpServlet {
         } else if (guestName != null && !guestName.trim().isEmpty()) {
             reservations = reservationDAO.findByGuestName(guestName.trim());
         } else {
-            // Default: show all active / recent reservations
-            reservations = reservationDAO.findAllActive(); // you can implement this
+            reservations = reservationDAO.findAllActive();
         }
 
         req.setAttribute("reservations", reservations);

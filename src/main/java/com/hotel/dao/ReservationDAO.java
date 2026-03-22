@@ -10,8 +10,8 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-// Design Pattern: Singleton
-// Design Pattern: DAO Pattern
+// Singleton
+// DAO Pattern
 public class ReservationDAO {
 
     private static ReservationDAO instance;

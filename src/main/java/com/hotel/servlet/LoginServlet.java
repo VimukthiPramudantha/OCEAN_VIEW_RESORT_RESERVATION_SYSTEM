@@ -18,7 +18,6 @@ public class LoginServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        // If already logged in → redirect to dashboard
         HttpSession session = req.getSession(false);
         if (session != null && session.getAttribute("user") != null) {
             resp.sendRedirect("dashboard");
@@ -32,7 +31,6 @@ public class LoginServlet extends HttpServlet {
         String username = req.getParameter("username");
         String password = req.getParameter("password");
 
-        // Basic server-side validation (add more later)
         if (username == null || username.trim().isEmpty() || password == null || password.trim().isEmpty()) {
             req.setAttribute("error", "Username and password are required");
             req.getRequestDispatcher("/login.jsp").forward(req, resp);
@@ -44,9 +42,7 @@ public class LoginServlet extends HttpServlet {
         if (user != null) {
             HttpSession session = req.getSession();
             session.setAttribute("user", user);
-            session.setMaxInactiveInterval(30 * 60); // 30 minutes timeout
-
-            // Optional: log last login time (update DB)
+            session.setMaxInactiveInterval(30 * 60);
 
             resp.sendRedirect("dashboard.jsp");
         } else {
