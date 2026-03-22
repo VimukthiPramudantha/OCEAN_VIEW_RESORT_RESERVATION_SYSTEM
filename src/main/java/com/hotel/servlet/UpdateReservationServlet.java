@@ -105,6 +105,8 @@ public class UpdateReservationServlet extends HttpServlet {
                 resp.sendRedirect("view-reservations");
             } else {
                 req.setAttribute("error", "Failed to update reservation (no changes made or database error).");
+                
+                ReservationDisplayDTO res = reservationDAO.findById(reservationId);
                 req.setAttribute("reservation", res);
                 req.getRequestDispatcher("/update-reservation.jsp").forward(req, resp);
             }
