@@ -123,7 +123,7 @@ public class RoomDAO {
                           (res.check_in >= ? AND res.check_out <= ?)
                       )
                     WHERE r.type = ?
-                      AND r.status = 'available'
+                      AND r.status != 'maintenance'
                       AND res.room_id IS NULL
                     LIMIT 1
                 """;

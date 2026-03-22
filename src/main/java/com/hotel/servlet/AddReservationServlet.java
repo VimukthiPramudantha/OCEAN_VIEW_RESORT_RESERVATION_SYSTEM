@@ -152,10 +152,6 @@ public class AddReservationServlet extends HttpServlet {
                     throw new SQLException("Failed to save reservation");
                 }
 
-                if (!roomDAO.markAsBooked(roomId, conn)) {
-                    throw new SQLException("Failed to update room status to booked");
-                }
-
                 conn.commit();
 
                 req.getSession().setAttribute("successMsg",

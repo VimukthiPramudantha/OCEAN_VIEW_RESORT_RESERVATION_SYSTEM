@@ -81,24 +81,26 @@ public class ReservationDAO {
                     INSERT INTO reservations (
                         reservation_number, guest_id, room_id,
                         check_in, check_out, rate_per_night,
+                        status,
                         special_requests, vehicle_number,
                         wake_up_call, luggage_storage,
                         loyalty_number, room_preference
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
         try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, res.getReservationNumber());
-            ps.setInt(2, res.getGuestId());
-            ps.setInt(3, res.getRoomId());
+            ps.setInt(2, res.getGuestId() != null ? res.getGuestId() : 0);
+            ps.setInt(3, res.getRoomId() != null ? res.getRoomId() : 0);
             ps.setDate(4, res.getCheckIn());
             ps.setDate(5, res.getCheckOut());
-            ps.setDouble(6, res.getRatePerNight());
-            ps.setString(7, res.getSpecialRequests());
-            ps.setString(8, res.getVehicleNumber());
-            ps.setTime(9, res.getWakeUpCall());
-            ps.setBoolean(10, Boolean.TRUE.equals(res.getLuggageStorage()));
-            ps.setString(11, res.getLoyaltyNumber());
-            ps.setString(12, res.getRoomPreference());
+            ps.setDouble(6, res.getRatePerNight() != null ? res.getRatePerNight() : 0.0);
+            ps.setString(7, "confirmed");
+            ps.setString(8, res.getSpecialRequests());
+            ps.setString(9, res.getVehicleNumber());
+            ps.setTime(10, res.getWakeUpCall());
+            ps.setBoolean(11, Boolean.TRUE.equals(res.getLuggageStorage()));
+            ps.setString(12, res.getLoyaltyNumber());
+            ps.setString(13, res.getRoomPreference());
             int rows = ps.executeUpdate();
             if (rows > 0) {
                 try (ResultSet rs = ps.getGeneratedKeys()) {
